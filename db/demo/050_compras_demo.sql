@@ -33,6 +33,12 @@ BEGIN;
 UPDATE lote SET entrada_id = NULL
  WHERE entrada_id IN (SELECT id FROM entrada_inventario WHERE observaciones = 'DEMO');
 
+-- Los renglones de una entrada confirmada no se borran (trigger
+-- `entrada_exigir_borrador`), y así debe ser en operación. Para poder
+-- rehacer la demo se devuelven a borrador primero; es el equivalente al
+-- DISABLE TRIGGER de 020_inventario_demo, y por la misma razón.
+UPDATE entrada_inventario SET estado = 'borrador' WHERE observaciones = 'DEMO';
+
 DELETE FROM entrada_linea
  WHERE entrada_id IN (SELECT id FROM entrada_inventario WHERE observaciones = 'DEMO');
 

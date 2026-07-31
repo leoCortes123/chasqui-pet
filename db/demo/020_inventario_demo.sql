@@ -48,6 +48,21 @@ DELETE FROM movimiento_inventario mi
  USING medicamento m
  WHERE m.id = mi.medicamento_id AND m.notas = 'DEMO';
 
+-- Las compras de demostración (050_compras_demo.sql) apuntan a este
+-- catálogo y a estos lotes, así que se van con ellos; 050 las vuelve a
+-- crear al final de la carga. Devolverlas antes a `borrador` es lo que
+-- permite borrar sus renglones: el trigger que protege lo confirmado
+-- sigue en pie, igual que en operación.
+UPDATE entrada_inventario SET estado = 'borrador' WHERE observaciones = 'DEMO';
+
+DELETE FROM entrada_linea
+ WHERE entrada_id IN (SELECT id FROM entrada_inventario WHERE observaciones = 'DEMO');
+
+UPDATE lote SET entrada_id = NULL
+ WHERE entrada_id IN (SELECT id FROM entrada_inventario WHERE observaciones = 'DEMO');
+
+DELETE FROM entrada_inventario WHERE observaciones = 'DEMO';
+
 DELETE FROM lote l USING medicamento m
  WHERE m.id = l.medicamento_id AND m.notas = 'DEMO';
 

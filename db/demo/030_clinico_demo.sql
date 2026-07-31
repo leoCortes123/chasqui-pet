@@ -355,6 +355,26 @@ BEGIN
       FROM consulta c WHERE c.id = v_cons;
   END IF;
 
+  -- Las salidas de medicamento las creó 020_inventario_demo, que corre
+  -- antes: en ese momento los turnos todavía no tenían paciente ni
+  -- consulta. Se les completa ahora el vínculo, que es lo que en
+  -- operación real hace `salida_medicamento()` sola al despachar. Sin
+  -- esto, la trazabilidad de lote (§10.9) y el reporte de consumo por
+  -- paciente saldrían vacíos en la presentación, que es justo lo que hay
+  -- que enseñar.
+  ALTER TABLE movimiento_inventario DISABLE TRIGGER movimiento_inmutable;
+
+  UPDATE movimiento_inventario mi
+     SET paciente_id = t.paciente_id,
+         consulta_id = COALESCE(mi.consulta_id, t.consulta_id)
+    FROM turno t
+   WHERE t.id = mi.turno_id
+     AND mi.tipo = 'salida'
+     AND mi.paciente_id IS NULL
+     AND t.paciente_id IS NOT NULL;
+
+  ALTER TABLE movimiento_inventario ENABLE TRIGGER movimiento_inmutable;
+
   PERFORM auditar('demo', '030_clinico_demo', 'cargar', NULL, 'sistema', NULL,
                   jsonb_build_object('duenos', array_length(v_duenos_id, 1),
                                      'pacientes', array_length(v_pacientes, 1),
