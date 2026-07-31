@@ -18,7 +18,9 @@ INSERT INTO config (clave, valor, tipo, descripcion, editable_ui) VALUES
   ('moneda_simbolo',         '$',   'texto',   'Símbolo de moneda en mensajes y recibos', false),
   ('zona_horaria',           'America/Bogota', 'texto', 'Zona horaria operativa de la clínica', false),
   ('nombre_clinica',         'Chasqui Pet',    'texto', 'Nombre que aparece en mensajes del bot y recibos', true),
-  ('politica_datos_url',     '',    'texto',   'URL de la política de tratamiento de datos (Ley 1581 de 2012)', true)
+  ('politica_datos_url',     '',    'texto',   'URL de la política de tratamiento de datos (Ley 1581 de 2012)', true),
+  ('recibo_leyenda',         'Documento interno de la clínica. No es factura electrónica.',
+                                    'texto',   'Leyenda al pie del recibo. El MVP no emite factura electrónica DIAN (§7.4)', true)
 ON CONFLICT (clave) DO NOTHING;
 
 -- Tipos de servicio con sus prefijos de turno (§5.2).
@@ -27,6 +29,25 @@ INSERT INTO tipo_servicio (codigo, nombre, prefijo, prioridad_base, duracion_est
   ('vacunacion', 'Vacunación',          'V', 0,   10, true,  2),
   ('control',    'Control / curación',  'C', 0,   10, true,  3),
   ('urgencia',   'Urgencia',            'U', 100, 30, false, 4)   -- nunca por QR
+ON CONFLICT (codigo) DO NOTHING;
+
+-- Tarifas iniciales (§7.1). Los valores son de arranque y se ajustan desde
+-- el portal: lo que importa aquí es que el bot tenga qué ofrecer el primer
+-- día. `permite_valor_libre` marca lo que se cobra por peso, por dosis o
+-- por acuerdo, donde el bot pregunta el valor en vez de suponerlo.
+INSERT INTO tarifa (codigo, tipo_servicio_id, nombre, valor_sugerido, permite_valor_libre, orden)
+SELECT v.codigo, ts.id, v.nombre, v.valor, v.libre, v.orden
+  FROM (VALUES
+    ('consulta_general', 'general',    'Consulta general',        60000, false, 1),
+    ('consulta_urgencia','urgencia',   'Consulta de urgencia',    90000, false, 2),
+    ('control',          'control',    'Control / curación',      30000, false, 3),
+    ('vacuna',           'vacunacion', 'Aplicación de vacuna',    25000, false, 4),
+    ('desparasitacion',  NULL,         'Desparasitación',             0,  true, 5),
+    ('procedimiento',    NULL,         'Procedimiento menor',         0,  true, 6),
+    ('certificado',      NULL,         'Certificado de salud',    40000, false, 7),
+    ('otro',             NULL,         'Otro cobro',                  0,  true, 9)
+  ) AS v(codigo, tipo_codigo, nombre, valor, libre, orden)
+  LEFT JOIN tipo_servicio ts ON ts.codigo = v.tipo_codigo
 ON CONFLICT (codigo) DO NOTHING;
 
 -- Sede y consultorios iniciales. El nombre real se ajusta desde el portal.

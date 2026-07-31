@@ -71,6 +71,21 @@ CREATE OR REPLACE FUNCTION bot_modulo_texto(
   p_usuario_id uuid, p_chat_id bigint, p_texto text, p_sede_id uuid)
 RETURNS jsonb LANGUAGE sql AS $$ SELECT NULL::jsonb; $$;
 
+-- /ayuda se atiende antes que los módulos —es un comando del enrutador—,
+-- así que su texto también es un enganche: cada módulo nuevo reescribe
+-- esta función añadiendo sus comandos, en vez de que la lista se quede
+-- vieja en 300 líneas de enrutador que nadie quiere volver a tocar.
+CREATE OR REPLACE FUNCTION bot_texto_ayuda(p_usuario_id uuid)
+RETURNS text
+LANGUAGE sql STABLE AS $$
+  SELECT '<b>Comandos</b>' || E'\n' ||
+         '/menu — menú principal' || E'\n' ||
+         '/cola — pacientes en espera' || E'\n' ||
+         '/stock — existencias y alertas de inventario' || E'\n' ||
+         '/sesiones — sesiones abiertas en el portal' || E'\n' ||
+         '/ayuda — esta ayuda';
+$$;
+
 -- ---------------------------------------------------------------------
 -- Menú principal, armado según los permisos reales del usuario (§4).
 -- Máximo 3 botones por fila (§12).
@@ -338,13 +353,8 @@ BEGIN
     END IF;
 
     IF v_texto_in = '/ayuda' THEN
-      RETURN jsonb_build_object('acciones', jsonb_build_array(accion_enviar(v_chat_id,
-        '<b>Comandos</b>' || E'\n' ||
-        '/menu — menú principal' || E'\n' ||
-        '/cola — pacientes en espera' || E'\n' ||
-        '/stock — existencias y alertas de inventario' || E'\n' ||
-        '/sesiones — sesiones abiertas en el portal' || E'\n' ||
-        '/ayuda — esta ayuda')));
+      RETURN jsonb_build_object('acciones', jsonb_build_array(
+        accion_enviar(v_chat_id, bot_texto_ayuda(v_usuario))));
     END IF;
 
     -- Si hay un flujo en curso (§2.2.1), el texto es su respuesta: el

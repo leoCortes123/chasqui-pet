@@ -43,8 +43,10 @@ DO $$
 DECLARE
   t text;
   -- Tablas inmutables por diseño. Se listan todas; las que aún no existen
-  -- en esta etapa del proyecto se ignoran sin fallar.
-  tablas text[] := ARRAY['evento_auditoria', 'movimiento_inventario'];
+  -- en esta etapa del proyecto se ignoran sin fallar. `pago` y `descuento`
+  -- entran por la misma razón que el inventario: un pago mal registrado se
+  -- corrige con un reverso, nunca editando la fila (§7.3).
+  tablas text[] := ARRAY['evento_auditoria', 'movimiento_inventario', 'pago', 'descuento'];
 BEGIN
   FOREACH t IN ARRAY tablas LOOP
     IF to_regclass('public.' || t) IS NOT NULL THEN

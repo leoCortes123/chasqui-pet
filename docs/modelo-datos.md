@@ -1,8 +1,8 @@
 # Modelo de datos — Chasqui Pet
 
 Este documento refleja el esquema **realmente implementado** en `db/migrations/`
-(pasos 1 a 4 del plan de implementación) y, aparte, el modelo **previsto** para
-los pasos 5 y 6, tal como está especificado en `chasquipet.md`.
+(pasos 1 a 5 del plan de implementación) y, aparte, el modelo **previsto** para
+el paso 6, tal como está especificado en `chasquipet.md`.
 
 ---
 
@@ -52,6 +52,20 @@ erDiagram
     tipo_servicio ||--o{ cita : "clasifica"
     usuario ||--o{ consulta : "firma"
     usuario ||--o{ disponibilidad : "atiende en"
+
+    turno ||--o| cuenta : "se cobra en"
+    consulta ||--o| cuenta : "se cobra en"
+    paciente ||--o{ cuenta : "acumula"
+    cuenta ||--o{ cuenta_linea : "detalla"
+    cuenta ||--o{ pago : "se salda con"
+    cuenta ||--o{ descuento : "rebaja"
+    tarifa ||--o{ cuenta_linea : "valora"
+    tipo_servicio ||--o{ tarifa : "se cobra segun"
+    movimiento_inventario ||--o| cuenta_linea : "se cobra como"
+    cierre_caja ||--o{ pago : "cuadra"
+    cierre_caja ||--o{ cuenta : "agrupa al cerrar"
+    usuario ||--o{ pago : "recibe"
+    usuario ||--o{ descuento : "autoriza"
 
     sede {
         uuid id PK
@@ -135,7 +149,7 @@ erDiagram
         uuid dueno_id "sin FK todavia"
         uuid paciente_id "sin FK todavia"
         uuid consulta_id "sin FK todavia"
-        uuid cuenta_id "sin FK todavia"
+        uuid cuenta_id FK
         int veces_llamado
         int veces_reencolado
     }
@@ -183,11 +197,91 @@ erDiagram
         numeric cantidad
         text motivo
         uuid turno_id FK
-        uuid consulta_id "sin FK todavia"
-        uuid paciente_id "sin FK todavia"
-        uuid cuenta_linea_id "sin FK todavia"
+        uuid consulta_id FK
+        uuid paciente_id FK
+        uuid cuenta_linea_id FK
         uuid usuario_id FK
         text canal
+    }
+
+    tarifa {
+        uuid id PK
+        uuid tipo_servicio_id FK
+        text codigo UK
+        text nombre
+        numeric valor_sugerido
+        boolean permite_valor_libre
+        boolean activa
+    }
+
+    cuenta {
+        uuid id PK
+        uuid sede_id FK
+        date fecha
+        uuid turno_id FK
+        uuid consulta_id FK
+        uuid paciente_id FK
+        uuid dueno_id FK
+        text estado
+        numeric subtotal "cache"
+        numeric descuento "cache"
+        numeric total "cache"
+        numeric pagado "cache"
+        int recibo_numero UK
+        uuid cierre_caja_id FK
+        timestamptz fecha_cierre
+    }
+
+    cuenta_linea {
+        uuid id PK
+        uuid cuenta_id FK
+        text tipo
+        uuid referencia_id
+        bigint movimiento_id FK,UK
+        text descripcion
+        numeric cantidad
+        numeric valor_unitario
+        numeric valor_total "generada"
+        uuid usuario_id FK
+    }
+
+    descuento {
+        uuid id PK
+        uuid cuenta_id FK
+        text tipo "descuento|reverso"
+        numeric valor
+        text motivo
+        uuid autorizado_por FK
+        uuid revierte_id FK
+    }
+
+    pago {
+        uuid id PK
+        uuid cuenta_id FK
+        uuid cierre_caja_id FK
+        text tipo "pago|reverso"
+        text medio
+        numeric valor
+        text referencia
+        uuid revierte_id FK
+        uuid usuario_id FK
+    }
+
+    cierre_caja {
+        uuid id PK
+        uuid sede_id FK
+        date fecha
+        uuid usuario_id FK
+        timestamptz apertura_at
+        timestamptz cierre_at
+        numeric base_inicial
+        numeric total_efectivo_esperado
+        numeric total_efectivo_contado
+        numeric total_transferencia
+        numeric total_datafono
+        numeric total_descuento
+        numeric diferencia
+        text estado
     }
 
     aviso_turno_enviado {
@@ -371,6 +465,12 @@ erDiagram
 | `medicamento` | El catálogo, con el precio de venta y el mínimo por debajo del cual hay que pedir. |
 | `lote` | La existencia física de un medicamento, con su vencimiento y el costo al que entró. |
 | `movimiento_inventario` | Cada entrada, salida, ajuste o baja. Inmutable: es la fuente de verdad del stock. |
+| `tarifa` | Cuánto vale cada servicio. `permite_valor_libre` marca lo que se cobra por acuerdo y el bot pregunta. |
+| `cuenta` | Lo que se le cobra a una atención. Se abre sola al entrar el turno en atención. |
+| `cuenta_linea` | El detalle: la tarifa del servicio y cada medicamento despachado, al precio del catálogo. |
+| `descuento` | Rebajas con motivo obligatorio y responsable. De sólo agregar: se revierten, no se editan. |
+| `pago` | Dinero recibido, atado a la caja abierta en ese momento. De sólo agregar, igual que el descuento. |
+| `cierre_caja` | La jornada de dinero de una sede: base, esperado, contado y diferencia. |
 | `aviso_turno_enviado` | Memoria de qué avisos de Telegram ya se mandaron, para no repetirlos en cada pasada del worker. |
 | `conversacion_estado` | Dónde va cada conversación del bot. Vive aquí para que n8n no guarde estado. |
 | `sesion` | Sesiones abiertas del portal web, revocables una a una. |
@@ -383,29 +483,38 @@ erDiagram
 
 ### Las columnas sin llave foránea
 
-`turno.cuenta_id`, `movimiento_inventario.cuenta_linea_id` y `lote.entrada_id`
-existen ya como `uuid`, pero todavía **no** tienen `REFERENCES`: las tablas a las
-que apuntan se crean en los pasos 5 y 6. Están declaradas desde ahora para que
-los módulos de turnos e inventario no haya que tocarlos cuando lleguen — la misma
-razón por la que `chasquipet.md` §3 pide modelar las citas sin implementarlas.
-Las llaves foráneas se añaden con `ALTER TABLE` en las migraciones de esos pasos,
-igual que `050_pacientes.sql` acaba de hacer con `turno.dueno_id`,
-`turno.paciente_id`, `turno.consulta_id`, `movimiento_inventario.consulta_id` y
-`movimiento_inventario.paciente_id`.
+Queda una sola: `lote.entrada_id`, que apunta a la tabla `entrada_inventario` del
+paso 6. Está declarada desde el paso 3 para que el módulo de inventario no haya
+que tocarlo cuando lleguen las compras — la misma razón por la que
+`chasquipet.md` §3 pide modelar las citas sin implementarlas. Su `REFERENCES` se
+añadirá con `ALTER TABLE`, igual que hizo `060_cobro.sql` con `turno.cuenta_id` y
+`movimiento_inventario.cuenta_linea_id`, y antes `050_pacientes.sql` con
+`turno.paciente_id` y `movimiento_inventario.consulta_id`.
 
 Desde el paso 4, una salida de medicamento queda atada a la visita
 (`movimiento_inventario.turno_id`), al animal y a la consulta. El flujo de salida
 no cambió para conseguirlo: `salida_medicamento()` lee el turno que el
 veterinario tiene en atención y copia de ahí `paciente_id` y `consulta_id`.
 
+### Los dos enlaces entre inventario y caja
+
+`cuenta_linea.movimiento_id` es el que se usa hoy: la salida se registra primero
+—el veterinario despacha con el animal en la mesa— y la línea de cobro la crea
+después el worker. Como `movimiento_inventario` es inmutable, el puntero tiene
+que vivir del lado de la línea, y su `UNIQUE` es lo que hace que reintentar la
+tarea no cobre el medicamento dos veces.
+
+`movimiento_inventario.cuenta_linea_id` existe desde el paso 3 y hoy queda en
+`NULL`. Se poblará en la venta directa de mostrador (paso 6), donde el orden se
+invierte: primero se cobra y después sale la mercancía.
+
 ---
 
-## 2. Pendiente (pasos 5 y 6 del plan)
+## 2. Pendiente (paso 6 del plan)
 
-Modelo previsto según `chasquipet.md` §7.1 y §9. **Todavía no existe en la base
-de datos.** `medicamento`, `lote`, `movimiento_inventario`, `consulta`, `turno` y
-`paciente` aparecen aquí sólo como referencia de las relaciones que les faltan
-por conectar.
+Modelo previsto según `chasquipet.md` §9. **Todavía no existe en la base de
+datos.** `medicamento` y `lote` aparecen aquí sólo como referencia de las
+relaciones que les faltan por conectar.
 
 ```mermaid
 erDiagram
@@ -413,15 +522,6 @@ erDiagram
     entrada_inventario ||--o{ lote : "genera al confirmar"
     proveedor ||--o{ entrada_inventario : "surte"
     medicamento ||--o{ entrada_linea : "se compra como"
-
-    tipo_servicio ||--o{ tarifa : "se cobra segun"
-
-    consulta ||--o| cuenta : "se cobra en"
-    cuenta ||--o{ cuenta_linea : "detalla"
-    cuenta ||--o{ pago : "se salda con"
-    cuenta ||--o{ descuento : "rebaja"
-    tarifa ||--o{ cuenta_linea : "valora"
-    cuenta_linea ||--o| movimiento_inventario : "despacha"
 
     proveedor {
         uuid id PK
@@ -452,72 +552,10 @@ erDiagram
         numeric costo_unitario
     }
 
-    tarifa {
-        uuid id PK
-        uuid tipo_servicio_id FK
-        text nombre
-        numeric valor_sugerido
-        boolean permite_valor_libre
-    }
-
-    cuenta {
-        uuid id PK
-        uuid turno_id FK
-        uuid consulta_id FK
-        uuid paciente_id FK
-        text estado
-        numeric subtotal
-        numeric descuento
-        numeric total
-        int recibo_numero
-    }
-
-    cuenta_linea {
-        uuid id PK
-        uuid cuenta_id FK
-        text tipo
-        uuid referencia_id
-        numeric cantidad
-        numeric valor_unitario
-        numeric valor_total
-    }
-
-    descuento {
-        uuid id PK
-        uuid cuenta_id FK
-        numeric valor
-        text motivo
-        uuid autorizado_por FK
-    }
-
-    pago {
-        uuid id PK
-        uuid cuenta_id FK
-        text medio
-        numeric valor
-        text referencia
-        uuid usuario_id FK
-    }
-
-    cierre_caja {
-        uuid id PK
-        date fecha
-        uuid usuario_id FK
-        numeric base_inicial
-        numeric total_efectivo_esperado
-        numeric total_efectivo_contado
-        numeric diferencia
-        text estado
-    }
-
 ```
 
 | Entidad | Para qué servirá | Paso |
 |---|---|---|
-| `tarifa` | Cuánto vale cada servicio. | 5 |
-| `cuenta` / `cuenta_linea` | La cuenta de la atención y su detalle. | 5 |
-| `descuento` / `pago` | Rebajas justificadas y dinero recibido. | 5 |
-| `cierre_caja` | Cuadre del efectivo al final del día. | 5 |
 | `proveedor` / `entrada_inventario` / `entrada_linea` | Compras que ingresan mercancía. | 6 |
 
 ---
@@ -611,3 +649,40 @@ canjearlo por una sesión (`058_auth_web.sql`). El token viaja una sola vez y en
 a nadie. Esto se adelantó al paso 4 —el resto del portal es el paso 7— porque el
 formulario web de consulta es historia clínica y no podía quedar abierto en la
 red local.
+
+**Los totales de la cuenta son un caché; el detalle es la verdad.**
+`cuenta.subtotal`, `.descuento`, `.total` y `.pagado` los mantiene un trigger a
+partir de `cuenta_linea`, `descuento` y `pago` — exactamente el mismo arreglo que
+`lote.cantidad_actual` con los movimientos, y por el mismo motivo: un total que
+se suma y se resta a mano acaba discrepando del detalle, y con dinero eso se
+descubre tarde y mal. `cuenta_linea.valor_total` va más lejos y es una columna
+generada: no existe forma de guardar una línea cuyo total no sea su cantidad por
+su valor unitario.
+
+**El dinero es de sólo agregar, como el inventario y la auditoría.**
+`pago` y `descuento` no admiten `UPDATE` ni `DELETE`: ni la aplicación
+(`090_grants.sql`) ni el dueño de las tablas (trigger `dinero_inmutable`). Un
+pago mal registrado se corrige con una fila `reverso` que apunta al original y
+que también queda. Por eso anular una cuenta cerrada no borra nada: revierte cada
+pago, y el cuadre de caja del día sigue diciendo la verdad.
+
+**El descuento nunca toca las líneas.**
+El subtotal se conserva íntegro y la rebaja se registra aparte, con motivo
+obligatorio y con quién la autorizó (§7.3). Si el descuento se aplicara borrando
+o editando líneas, a fin de mes un descuento autorizado y un error de digitación
+serían indistinguibles, y no habría reporte de descuentos que valga.
+
+**El pago se ata a la caja al registrarlo, no al cerrarla.**
+`pago.cierre_caja_id` se asigna en el `INSERT`, contra la caja que esté abierta en
+esa sede. Es lo que permite que `pago` sea inmutable y que el cierre siga siendo
+exacto: cuadrar es sumar las filas de esa caja, no adivinar qué pagos caían dentro
+del rango de horas. Si no hay caja abierta cuando entra el primer pago, se abre
+sola con base cero: que el auxiliar no pueda cobrar porque nadie declaró la base
+sería una traba inventada.
+
+**El recibo es interno y el sistema lo dice en voz alta.**
+`recibo_numero` es un consecutivo por sede, asignado al cerrar con el mismo
+advisory lock que la numeración de turnos, y el pie del recibo lleva la leyenda de
+`config.recibo_leyenda`: «no es factura electrónica». La facturación DIAN es
+obligatoria antes de operar de verdad (§7.4) y entrará como una tabla
+`documento_electronico` que referencie `cuenta`, sin tocar nada de lo que ya está.

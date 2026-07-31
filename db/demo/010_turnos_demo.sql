@@ -102,6 +102,40 @@ BEGIN
   -- consultorio, y al final los usuarios de demo. Los seeds y el
   -- superadmin real quedan intactos.
   -- ===================================================================
+  -- El módulo de cobro (§7) cuelga la cuenta del turno, y de la cuenta
+  -- cuelgan líneas, pagos y descuentos. Va antes que todo lo demás porque
+  -- cuenta_linea apunta al movimiento de inventario que despachó el
+  -- medicamento. pago y descuento son de sólo agregar —trigger y grants—,
+  -- así que los triggers se desactivan dentro de esta transacción, igual
+  -- que con los movimientos. Lo vuelve a crear 040_cobro_demo.sql.
+  IF to_regclass('public.cuenta') IS NOT NULL THEN
+    ALTER TABLE pago      DISABLE TRIGGER pago_inmutable;
+    ALTER TABLE descuento DISABLE TRIGGER descuento_inmutable;
+    ALTER TABLE cuenta_linea DISABLE TRIGGER cuenta_linea_no_editar;
+
+    -- Se borra la cuenta de hoy y también la de cualquier día anterior que
+    -- cuelgue de un paciente de demo: esos pacientes se recrean más abajo,
+    -- y sus líneas apuntan a movimientos que 020 va a borrar.
+    CREATE TEMP TABLE _cuentas_demo ON COMMIT DROP AS
+      SELECT id FROM cuenta
+       WHERE fecha = hoy_bogota()
+          OR turno_id IN (SELECT id FROM turno WHERE fecha = hoy_bogota())
+          OR paciente_id IN (SELECT id FROM paciente WHERE notas = 'DEMO');
+
+    UPDATE turno SET cuenta_id = NULL
+     WHERE cuenta_id IN (SELECT id FROM _cuentas_demo);
+
+    DELETE FROM pago         WHERE cuenta_id IN (SELECT id FROM _cuentas_demo);
+    DELETE FROM descuento    WHERE cuenta_id IN (SELECT id FROM _cuentas_demo);
+    DELETE FROM cuenta_linea WHERE cuenta_id IN (SELECT id FROM _cuentas_demo);
+    DELETE FROM cuenta       WHERE id IN (SELECT id FROM _cuentas_demo);
+    DELETE FROM cierre_caja  WHERE fecha = hoy_bogota();
+
+    ALTER TABLE cuenta_linea ENABLE TRIGGER cuenta_linea_no_editar;
+    ALTER TABLE descuento ENABLE TRIGGER descuento_inmutable;
+    ALTER TABLE pago      ENABLE TRIGGER pago_inmutable;
+  END IF;
+
   -- El módulo de inventario (§6) ata cada salida al turno en que se
   -- despachó y al veterinario que la hizo. Como aquí se borran los turnos
   -- del día y el personal de demo para regenerarlos, hay que soltar antes

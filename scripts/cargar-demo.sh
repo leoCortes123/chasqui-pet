@@ -69,6 +69,14 @@ SELECT estado, count(*) AS turnos
 SELECT count(*) AS personal_de_demo
   FROM usuario
  WHERE telegram_user_id BETWEEN 900000000 AND 900000099;
+
+SELECT estado,
+       count(*)          AS cuentas,
+       pesos(sum(total)) AS valor
+  FROM cuenta
+ WHERE fecha = hoy_bogota()
+ GROUP BY estado
+ ORDER BY cuentas DESC;
 SQL
 
 sede=$(psql_demo -tAc "SELECT id FROM sede WHERE activa ORDER BY created_at LIMIT 1" </dev/null | tr -d '[:space:]')

@@ -20,6 +20,7 @@ import * as abrirCuentaTurno from './abrir_cuenta_turno.js';
 import * as alertasInventario from './alertas_inventario.js';
 import * as agregarLineaCuenta from './agregar_linea_cuenta.js';
 import * as enviarResumenConsulta from './enviar_resumen_consulta.js';
+import * as enviarRecibo from './enviar_recibo.js';
 import * as notificarInicioSesion from './notificar_inicio_sesion.js';
 
 const MODULOS = [
@@ -31,6 +32,7 @@ const MODULOS = [
   alertasInventario,
   agregarLineaCuenta,
   enviarResumenConsulta,
+  enviarRecibo,
   notificarInicioSesion,
 ];
 

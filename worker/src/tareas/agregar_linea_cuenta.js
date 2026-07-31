@@ -1,31 +1,42 @@
 // ---------------------------------------------------------------------------
 // agregar_linea_cuenta — payload {movimiento_id, turno_id, origen}
 //
-// Lo encola salida_medicamento(): cada salida despachada debe aparecer como
-// línea en la cuenta del paciente, al precio_venta del medicamento (§6.3).
+// La encola salida_medicamento(): cada medicamento despachado aparece como
+// línea en la cuenta del paciente, al precio_venta del catálogo (§6.3). El
+// veterinario no teclea nada; el auxiliar se encuentra la cuenta ya armada.
 //
-// TODO paso 5: el módulo de cobro (§7) todavía no existe. Cuando exista, aquí
-// se busca (o se abre) la cuenta del turno, se inserta la cuenta_linea con
-// cantidad y valor_unitario, y se guarda su id en
-// movimiento_inventario.cuenta_linea_id.
-//
-// Mientras tanto es un no-op EXPLÍCITO, igual que abrir_cuenta_turno: no debe
-// fallar. Si fallara, cada salida de medicamento quemaría cinco reintentos y
-// dispararía una alarma al superadmin por algo que aún no está construido.
+// agregar_linea_medicamento() es idempotente por movimiento_id —hay un UNIQUE
+// en cuenta_linea.movimiento_id—, así que un reintento no cobra dos veces.
 // ---------------------------------------------------------------------------
 
 export const tipo = 'agregar_linea_cuenta';
 
-export async function manejar({ payload }, { log }) {
-  const movimientoId = payload?.movimiento_id ?? null;
-  log.info(
-    `agregar_linea_cuenta(mov ${movimientoId}): módulo de cobro no implementado, se omite`,
-  );
+// Casos que no son un error: la salida no está atada a una visita (uso
+// interno, muestra) o la cuenta ya se cerró. Reintentar no los arregla.
+const NO_REINTENTAR = new Set(['sin_turno', 'cuenta_cerrada', 'no_es_salida']);
 
-  // TODO paso 5: reemplazar por la creación real de la línea (§7.1).
+export async function manejar({ payload }, { db, log }) {
+  const movimientoId = payload?.movimiento_id;
+  if (!movimientoId) throw new Error('payload sin movimiento_id');
+
+  const { rows } = await db.query('SELECT agregar_linea_medicamento($1, NULL, $2) AS r', [
+    movimientoId,
+    'job',
+  ]);
+  const r = rows[0].r;
+
+  if (!r.ok) {
+    if (NO_REINTENTAR.has(r.motivo)) {
+      log.info(`agregar_linea_cuenta(mov ${movimientoId}): ${r.mensaje}`);
+      return { agregada: false, motivo: r.motivo };
+    }
+    throw new Error(r.mensaje ?? `no se pudo cobrar el movimiento ${movimientoId}`);
+  }
+
   return {
-    pendiente: 'modulo_cobro_no_implementado',
-    movimiento_id: movimientoId,
-    turno_id: payload?.turno_id ?? null,
+    agregada: !r.ya_existia,
+    linea_id: r.linea_id ?? null,
+    cuenta_id: r.cuenta?.cuenta_id ?? null,
+    total: r.cuenta?.total ?? null,
   };
 }
