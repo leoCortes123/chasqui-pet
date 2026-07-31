@@ -1,0 +1,99 @@
+{
+  "id": "chasquipetMant",
+  "name": "Chasqui Pet — Mantenimiento diario",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 15 3 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-mantenimiento",
+      "name": "Cada día 3:15",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Purga lo que crece para siempre y no sirve pasadas unas semanas:\n-- updates de Telegram, conversaciones vencidas, challenges de ingreso y\n-- tareas ya completadas. NO toca la auditoría ni los movimientos de\n-- inventario: ésos no se purgan nunca, y ahí está su valor.\nSELECT mantenimiento_diario() AS resultado;",
+        "options": {}
+      },
+      "id": "sql-mantenimiento",
+      "name": "Purga diaria",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- A las 3 de la mañana no hay nadie usando el sistema: es el momento de\n-- que Postgres recalcule las estadísticas de las tablas que más se\n-- mueven. Sin esto, la búsqueda por trigramas del catálogo se degrada\n-- según crece el histórico de movimientos.\nANALYZE movimiento_inventario, turno, cuenta, evento_auditoria;\nSELECT 1 AS ok;",
+        "options": {}
+      },
+      "id": "sql-analyze",
+      "name": "Recalcular estadísticas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada día 3:15": {
+      "main": [
+        [
+          {
+            "node": "Purga diaria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Purga diaria": {
+      "main": [
+        [
+          {
+            "node": "Recalcular estadísticas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "active": true
+}

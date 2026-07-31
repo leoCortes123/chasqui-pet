@@ -62,6 +62,10 @@ curl -sS -X POST "${API}/setMyCommands" \
         {"command":"menu","description":"Menú principal"},
         {"command":"cola","description":"Pacientes en espera"},
         {"command":"stock","description":"Existencias y alertas de inventario"},
+        {"command":"entrada","description":"Registrar una compra que llegó"},
+        {"command":"proveedores","description":"Proveedores y última compra"},
+        {"command":"cobrar","description":"Cuentas abiertas por cobrar"},
+        {"command":"caja","description":"Estado de la caja del día"},
         {"command":"sesiones","description":"Sesiones abiertas en el portal"},
         {"command":"ayuda","description":"Ayuda"}
       ]}' | sed 's/^/    /'

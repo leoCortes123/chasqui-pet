@@ -67,6 +67,12 @@ REVOKE DELETE, TRUNCATE ON telegram_update FROM chasquipet_app;
 -- caso claro: la app no puede escribir directo pero sí a través de ella.
 ALTER FUNCTION auditar(text, text, text, uuid, text, jsonb, jsonb, text) SECURITY DEFINER;
 
+-- La purga diaria borra de `telegram_update`, sobre la que la aplicación no
+-- tiene DELETE. Puede hacerlo por esta puerta concreta y por ninguna otra:
+-- la función no recibe parámetros, así que no hay nada que manipular desde
+-- fuera para que borre otra cosa.
+ALTER FUNCTION mantenimiento_diario() SECURITY DEFINER;
+
 -- Nuevas tablas y funciones creadas después heredan estos permisos.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO chasquipet_app;
