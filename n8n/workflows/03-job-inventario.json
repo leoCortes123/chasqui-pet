@@ -1,0 +1,98 @@
+{
+  "name": "Chasqui Pet — Inventario diario",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 30 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b3000000-0000-4000-8000-000000000001",
+      "name": "Cada día 7:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -620,
+        0
+      ],
+      "notes": "Antes de abrir la clínica: el administrador se encuentra la alerta al llegar. La zona horaria del workflow es America/Bogota."
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Un lote vencido deja de ser despachable el mismo día (§6.1). No se le\n-- da de baja solo: esa decisión tiene responsable y queda pendiente en la\n-- alerta hasta que alguien la tome.\nSELECT bloquear_lotes_vencidos() AS lotes_bloqueados;",
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000002",
+      "name": "Bloquear lotes vencidos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -380,
+        -110
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Encola el aviso del §6.2. La clave de unicidad es la fecha operativa:\n-- si el job corre dos veces (reinicio, reimportación) el administrador\n-- recibe una sola alerta al día.\n-- El worker decide si hay algo que decir; si no lo hay, no envía nada.\nSELECT encolar_tarea(\n         'alertas_inventario',\n         '{}'::jsonb,\n         3,\n         'alertas_inv_' || hoy_bogota()::text\n       ) AS tarea_id;",
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000003",
+      "name": "Encolar alerta de inventario",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -140,
+        -110
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada día 7:30": {
+      "main": [
+        [
+          {
+            "node": "Bloquear lotes vencidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bloquear lotes vencidos": {
+      "main": [
+        [
+          {
+            "node": "Encolar alerta de inventario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

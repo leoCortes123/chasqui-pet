@@ -1,0 +1,236 @@
+# Chasqui Pet — Orquestación de contenedores
+#
+# Levanta todo el sistema con:  docker compose up -d
+# Requiere un archivo .env en esta misma carpeta (copiar desde .env.example).
+#
+# NOTA sobre el orden de inicialización de la base de datos:
+#   La imagen oficial de Postgres ejecuta TODO lo que hay en
+#   /docker-entrypoint-initdb.d en orden alfabético, pero ignora los
+#   subdirectorios. Por eso ./db/migrations se monta como el contenido completo
+#   de esa ruta y ahí conviven los .sh y los .sql, ordenados por su prefijo:
+#     000_n8n_db.sh    → crea la base y el usuario propios de n8n
+#     010_ … 110_      → esquema, funciones, permisos y seeds
+#     900_superadmin.sh→ contraseñas de los roles de aplicación y superadmin
+#   Los prefijos son de TRES dígitos a propósito: con dos ("00_"), el guión bajo
+#   se ordena DESPUÉS de cualquier dígito y el script correría al final.
+#   Tampoco se monta ningún archivo suelto dentro de esta ruta: el directorio va
+#   montado :ro y Docker no puede crear un punto de montaje dentro de él.
+#   Todo esto solo corre la PRIMERA vez, cuando el volumen pgdata está vacío.
+
+name: chasquipet
+
+services:
+  # ---------------------------------------------------------------------------
+  # Base de datos — fuente única de verdad
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: chasquipet-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Variables que consumen los scripts de ./db/init
+      N8N_DB_NAME: ${N8N_DB_NAME}
+      N8N_DB_USER: ${N8N_DB_USER}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD}
+      # Disponibles para los seeds: el superadmin inicial se crea con estos datos
+      SUPERADMIN_TELEGRAM_USER_ID: ${SUPERADMIN_TELEGRAM_USER_ID}
+      SUPERADMIN_NOMBRE: ${SUPERADMIN_NOMBRE}
+      # Contraseñas de los roles de aplicación, que fija 900_superadmin.sh
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      READONLY_DB_PASSWORD: ${READONLY_DB_PASSWORD}
+      TZ: ${TZ}
+      PGTZ: ${TZ}
+      # Locale e índices sensibles a acentos/ñ para las búsquedas del catálogo
+      LANG: es_CO.UTF-8
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Solo accesible desde la máquina anfitriona, nunca desde la LAN
+      # 5433 en el anfitrión: el sistema Chasqui original ya ocupa el 5432.
+      # Chasqui Pet es independiente y debe poder convivir con él en la misma máquina.
+      - "127.0.0.1:${PUERTO_DB:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - chasquipet
+
+  # ---------------------------------------------------------------------------
+  # n8n — orquestación de webhooks y jobs
+  # ---------------------------------------------------------------------------
+  n8n:
+    # Versión fija, no "latest": esto puede volverse producción sin avisar y una
+    # actualización silenciosa de n8n no puede cambiar el comportamiento del bot.
+    # Para subir de versión: cambie el número aquí, levante, y vuelva a correr
+    # bash scripts/importar-n8n.sh.
+    image: n8nio/n8n:2.31.5
+    container_name: chasquipet-n8n
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: ${WEBHOOK_URL}
+      GENERIC_TIMEZONE: ${TZ}
+      TZ: ${TZ}
+      # Autenticación básica del panel de n8n
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      # Clave con la que n8n cifra las credenciales guardadas. Si cambia, se pierden.
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      # n8n guarda su propio estado en una base SEPARADA (n8n), con usuario propio,
+      # dentro del mismo servidor Postgres. Nunca en la base de negocio.
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: db
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
+      DB_POSTGRESDB_SCHEMA: public
+      # Ejecuta los nodos en un proceso aparte (recomendado desde n8n 1.x)
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      # Cadena de conexión a la base de negocio, para los nodos Postgres
+      DATABASE_URL: ${DATABASE_URL}
+      # El workflow del webhook arma la URL de la Bot API con $env.TELEGRAM_BOT_TOKEN,
+      # así el token no queda escrito dentro del JSON versionado del workflow.
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      # Necesario para que las expresiones puedan leer $env (por defecto n8n lo bloquea).
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Los workflows guardan las ejecuciones exitosas (saveDataSuccessExecution:
+      # "all"). Sin poda crecerían sin límite: el webhook del bot se ejecuta una
+      # vez por cada toque de botón del personal.
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: 168      # horas = 7 días
+      EXECUTIONS_DATA_PRUNE_MAX_COUNT: 10000
+    volumes:
+      - n8ndata:/home/node/.n8n
+      # Workflows versionados en el repositorio, disponibles para importar:
+      #   docker compose exec n8n n8n import:workflow --separate --input=/workflows
+      - ./n8n/workflows:/workflows:ro
+    ports:
+      - "127.0.0.1:${PUERTO_N8N:-5679}:5678"   # 5679: el 5678 lo usa el n8n de Chasqui
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - chasquipet
+
+  # ---------------------------------------------------------------------------
+  # Worker — cola de tareas asíncronas (tarea_async)
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    image: chasquipet/worker:latest
+    container_name: chasquipet-worker
+    # El worker debe reintentar siempre: si muere, la cola deja de drenarse.
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      SUPERADMIN_TELEGRAM_USER_ID: ${SUPERADMIN_TELEGRAM_USER_ID}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL}
+      WORKER_INTERVALO_MS: ${WORKER_INTERVALO_MS}
+      WORKER_LOTE: ${WORKER_LOTE}
+    networks:
+      - chasquipet
+
+  # ---------------------------------------------------------------------------
+  # Web — portal administrativo + pantalla pública de turnos
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: chasquipet/web:latest
+    container_name: chasquipet-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL}
+      N8N_INTERNAL_URL: http://n8n:5678
+    ports:
+      # Expuesto a toda la LAN: la pantalla pública de turnos se ve desde el
+      # monitor de la sala de espera, que es otro equipo de la red.
+      - "0.0.0.0:${PUERTO_WEB:-3100}:3000"      # 3100: puerto de la pantalla y el portal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - chasquipet
+
+  # ---------------------------------------------------------------------------
+  # Backup — pg_dump diario con retención de 14 días
+  # ---------------------------------------------------------------------------
+  backup:
+    image: postgres:16-alpine
+    container_name: chasquipet-backup
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      PGTZ: ${TZ}
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      BACKUP_DIR: /backups
+      BACKUP_RETENCION_DIAS: ${BACKUP_RETENCION_DIAS}
+      BACKUP_HORA: ${BACKUP_HORA}
+    entrypoint: ["/bin/sh", "/scripts/backup.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+    networks:
+      - chasquipet
+
+volumes:
+  pgdata:
+    name: chasquipet_pgdata
+  n8ndata:
+    name: chasquipet_n8ndata
+
+networks:
+  chasquipet:
+    name: chasquipet
+    driver: bridge

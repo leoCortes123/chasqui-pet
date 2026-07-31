@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+npm-debug.log*
+.env
+.env.*
+!.env.production
+Dockerfile
+.dockerignore
+*.md
+*.log
+coverage
+tmp
+.cache

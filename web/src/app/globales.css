@@ -1,0 +1,28 @@
+/* Estilos base compartidos por todo el sitio. CSS plano, sin frameworks. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: #0b1016;
+  color: #e9eef5;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* La pantalla de sala de espera se ve en un monitor sin ratón: nada de
+   selección accidental ni barras de desplazamiento. */
+:root {
+  color-scheme: dark;
+}

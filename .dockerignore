@@ -1,0 +1,48 @@
+# Todo lo que no debe entrar al contexto de construcción de las imágenes.
+# Mantenerlo corto acelera cada 'docker compose build'.
+
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Dependencias y artefactos de construcción
+node_modules
+**/node_modules
+.next
+**/.next
+out
+**/out
+dist
+**/dist
+build
+**/build
+*.tsbuildinfo
+
+# Datos y respaldos
+backups
+**/backups
+*.dump
+pgdata
+
+# Control de versiones y documentación
+.git
+.gitignore
+.dockerignore
+docs
+*.md
+
+# Otros servicios: cada imagen se construye desde su propia carpeta
+db
+n8n
+scripts
+
+# Registros, temporales, editores
+*.log
+logs
+tmp
+.cache
+coverage
+.DS_Store
+.idea
+.vscode
