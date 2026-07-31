@@ -224,6 +224,32 @@ services:
     networks:
       - chasquipet
 
+  # ---------------------------------------------------------------------------
+  # cloudflared — túnel HTTPS para el webhook de Telegram
+  #
+  # Telegram sólo entrega webhooks a direcciones HTTPS, y una máquina de la
+  # clínica no tiene uno. Este túnel publica ÚNICAMENTE n8n, que es lo que
+  # Telegram necesita alcanzar; la base, el portal y la pantalla siguen sin
+  # salir de la red local.
+  #
+  # No arranca solo: vive en el perfil "local" porque en un despliegue con
+  # dominio propio sobra. Se levanta con
+  #     docker compose --profile local up -d cloudflared
+  # y la URL https que imprime en su log va en WEBHOOK_URL dentro de .env.
+  # Un túnel rápido de Cloudflare cambia de dirección en cada arranque, así
+  # que después de levantarlo hay que volver a correr configurar-bot.sh.
+  # ---------------------------------------------------------------------------
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: chasquipet-cloudflared
+    restart: unless-stopped
+    profiles: ["local"]
+    command: tunnel --no-autoupdate --url http://n8n:5678
+    depends_on:
+      - n8n
+    networks:
+      - chasquipet
+
 volumes:
   pgdata:
     name: chasquipet_pgdata

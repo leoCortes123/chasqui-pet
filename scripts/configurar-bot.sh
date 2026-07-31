@@ -61,6 +61,8 @@ curl -sS -X POST "${API}/setMyCommands" \
   -d '{"commands":[
         {"command":"menu","description":"Menú principal"},
         {"command":"cola","description":"Pacientes en espera"},
+        {"command":"stock","description":"Existencias y alertas de inventario"},
+        {"command":"sesiones","description":"Sesiones abiertas en el portal"},
         {"command":"ayuda","description":"Ayuda"}
       ]}' | sed 's/^/    /'
 echo
