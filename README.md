@@ -4,10 +4,11 @@ Sistema de gestión para clínica veterinaria, operado principalmente desde
 Telegram. Sistema nuevo e independiente: no comparte código ni base de datos con
 Chasqui.
 
-> **Estado: paso 3 de 8.** Están terminados el esquema base con identidad, roles
-> y permisos, el módulo completo de turnos y el de inventario. Historia clínica,
-> cobro, proveedores y portal administrativo son los pasos siguientes. La guía
-> de operación para el personal de la clínica se escribe en el paso 8.
+> **Estado: paso 4 de 8.** Están terminados el esquema base con identidad, roles
+> y permisos, el módulo de turnos, el de inventario y el clínico —dueños,
+> pacientes e historia clínica, por chat y por formulario web—. Cobro,
+> proveedores y el resto del portal administrativo son los pasos siguientes. La
+> guía de operación para el personal de la clínica se escribe en el paso 8.
 
 ## Qué hay funcionando
 
@@ -29,6 +30,19 @@ Chasqui.
   con un movimiento inverso, nunca editando el original.
 - Bloqueo automático de lotes vencidos y alerta diaria por Telegram de lo que
   está bajo el mínimo, lo que vence pronto y lo vencido sin dar de baja.
+- Dueños y pacientes: alta desde el chat en seis toques, búsqueda tolerante a
+  errores de tipeo —por mascota, por dueño o por teléfono— y aviso de posible
+  duplicado antes de crear.
+- Consulta clínica desde Telegram: botones para todo lo enumerable, guardado
+  como borrador en cada paso y firma explícita. Sin motivo, diagnóstico y
+  tratamiento no se puede firmar; una vez firmada no se edita, se le agrega una
+  adenda.
+- El mismo formulario completo en el portal web, con la historia clínica del
+  paciente en línea de tiempo.
+- Ingreso al portal con el Telegram del personal: código de seis dígitos,
+  confirmación en el bot y aviso al usuario cada vez que se abre una sesión.
+- Resumen de la consulta al dueño por Telegram al firmarla, sólo si dio su
+  consentimiento (Ley 1581 de 2012), con mecanismo de supresión de sus datos.
 - Cola de tareas con reintentos, espera creciente y bandeja de fallidas.
 - Copia de seguridad diaria automática con 14 días de retención.
 
@@ -60,6 +74,11 @@ bash scripts/cargar-demo.sh   # opcional: un día simulado para presentar
 `configurar-bot.sh` imprime al final el enlace del QR de la entrada y la
 dirección de la pantalla de sala de espera.
 
+El portal está en `http://<esta-máquina>:3100/entrar`. No pide contraseña:
+muestra un código, se confirma desde el bot con el Telegram del propio usuario y
+la sesión queda abierta 30 días. Quien no esté aprovisionado como usuario no
+entra, y el bot no le dice si el código era válido.
+
 ### Telegram necesita HTTPS
 
 Telegram sólo entrega webhooks a direcciones HTTPS, así que en una máquina local
@@ -90,7 +109,7 @@ db/migrations/   Esquema, funciones y seeds. Se aplican solos al crear la base.
 db/demo/         Datos de demostración.
 n8n/workflows/   Workflows del bot y de los jobs, versionados.
 worker/          Servicio que procesa la cola de tareas asíncronas.
-web/             Next.js: pantalla pública y (más adelante) portal.
+web/             Next.js: pantalla pública, ingreso y portal clínico.
 scripts/         Puesta en marcha, respaldos y utilidades.
 docs/            Modelo de datos y documentación técnica.
 ```

@@ -118,6 +118,29 @@ BEGIN
     ALTER TABLE movimiento_inventario ENABLE TRIGGER movimiento_inmutable;
   END IF;
 
+  -- El módulo clínico (§8) cuelga la consulta del turno y el turno del
+  -- paciente. Igual que con los movimientos, hay que soltar eso antes de
+  -- borrar los turnos del día y el personal de demo, que es quien firma
+  -- esas consultas. Lo vuelve a crear 030_clinico_demo.sql.
+  IF to_regclass('public.consulta') IS NOT NULL THEN
+    UPDATE turno SET consulta_id = NULL, paciente_id = NULL, dueno_id = NULL
+     WHERE fecha = hoy_bogota();
+
+    DELETE FROM consulta_adenda a USING consulta c
+     WHERE a.consulta_id = c.id
+       AND (c.paciente_id IN (SELECT id FROM paciente WHERE notas = 'DEMO')
+            OR c.veterinario_id IN (SELECT id FROM usuario
+                                     WHERE telegram_user_id BETWEEN c_tg_base AND c_tg_tope));
+
+    DELETE FROM consulta
+     WHERE paciente_id IN (SELECT id FROM paciente WHERE notas = 'DEMO')
+        OR veterinario_id IN (SELECT id FROM usuario
+                               WHERE telegram_user_id BETWEEN c_tg_base AND c_tg_tope);
+
+    DELETE FROM paciente WHERE notas = 'DEMO';
+    DELETE FROM dueno    WHERE notas = 'DEMO';
+  END IF;
+
   DELETE FROM turno WHERE fecha = hoy_bogota();
   GET DIAGNOSTICS v_borrados_turno = ROW_COUNT;
 

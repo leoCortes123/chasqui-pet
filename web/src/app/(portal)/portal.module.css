@@ -1,0 +1,80 @@
+/* -----------------------------------------------------------------------------
+   Portal administrativo (§11.2).
+   Se usa en un portátil de recepción y en el celular del veterinario, así que
+   todo es una sola columna que se ensancha, sin barras laterales.
+----------------------------------------------------------------------------- */
+
+.marco {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Cabecera ------------------------------------------------------------ */
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(233, 238, 245, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.marca {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.navegacion {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+.navegacion a {
+  color: rgba(233, 238, 245, 0.75);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.navegacion a:hover {
+  color: #ffffff;
+}
+
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(233, 238, 245, 0.6);
+  font-size: 0.9rem;
+}
+
+.salir {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(233, 238, 245, 0.2);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: rgba(233, 238, 245, 0.75);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.salir:hover {
+  color: #ffffff;
+  border-color: rgba(233, 238, 245, 0.45);
+}
+
+/* --- Contenido ----------------------------------------------------------- */
+
+.contenido {
+  width: min(60rem, 100%);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+  flex: 1;
+}

@@ -22,9 +22,9 @@
 SET client_min_messages = warning;
 
 -- ---------------------------------------------------------------------
--- Botones del menú principal (engancha con bot_menu_extra de 040)
+-- Botones propios en el menú principal
 -- ---------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION bot_menu_extra(p_usuario_id uuid)
+CREATE OR REPLACE FUNCTION bot_inv_menu(p_usuario_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql STABLE AS $$
 DECLARE v_fila jsonb := '[]'::jsonb;
@@ -316,12 +316,13 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------
--- Enganche de callbacks (reemplaza el vacío declarado en 040)
+-- Callbacks de inventario
 --
--- Los módulos siguientes (clínico, cobro) añadirán su prefijo a este
--- CASE con otro CREATE OR REPLACE. Devolver NULL significa «no es mío».
+-- Devuelve NULL si el callback no empieza por 'inv': eso significa «no es
+-- mío» y quien despacha sigue preguntando a los demás módulos. El
+-- despachador está al final de este archivo.
 -- ---------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION bot_modulo_callback(
+CREATE OR REPLACE FUNCTION bot_inv_callback(
   p_usuario_id uuid, p_chat_id bigint, p_mensaje_id bigint, p_data text, p_sede_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql AS $$
@@ -466,9 +467,9 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------
--- Enganche de texto libre: búsqueda, cantidad y motivo
+-- Texto libre de inventario: búsqueda, cantidad y motivo
 -- ---------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION bot_modulo_texto(
+CREATE OR REPLACE FUNCTION bot_inv_texto(
   p_usuario_id uuid, p_chat_id bigint, p_texto text, p_sede_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql AS $$
@@ -539,4 +540,33 @@ BEGIN
   RETURN jsonb_build_object('acciones', jsonb_build_array(
     accion_enviar(p_chat_id, v_vista->>'texto', v_vista->'botones')));
 END;
+$$;
+
+-- ---------------------------------------------------------------------
+-- Despachador de módulos (reemplaza los enganches vacíos de 040)
+--
+-- Cada módulo nuevo reescribe estas dos funciones añadiendo su llamada.
+-- Son cinco líneas y no contienen lógica de negocio: lo que no se debe
+-- duplicar —el CASE de cada módulo— vive en su propia función. COALESCE
+-- corta en cuanto uno responde, así que el módulo que no toca no se
+-- ejecuta.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION bot_menu_extra(p_usuario_id uuid)
+RETURNS jsonb
+LANGUAGE sql STABLE AS $$
+  SELECT bot_inv_menu(p_usuario_id);
+$$;
+
+CREATE OR REPLACE FUNCTION bot_modulo_callback(
+  p_usuario_id uuid, p_chat_id bigint, p_mensaje_id bigint, p_data text, p_sede_id uuid)
+RETURNS jsonb
+LANGUAGE sql AS $$
+  SELECT bot_inv_callback(p_usuario_id, p_chat_id, p_mensaje_id, p_data, p_sede_id);
+$$;
+
+CREATE OR REPLACE FUNCTION bot_modulo_texto(
+  p_usuario_id uuid, p_chat_id bigint, p_texto text, p_sede_id uuid)
+RETURNS jsonb
+LANGUAGE sql AS $$
+  SELECT bot_inv_texto(p_usuario_id, p_chat_id, p_texto, p_sede_id);
 $$;

@@ -1,7 +1,9 @@
 # Chasqui Pet — Portal web y pantalla de turnos
 
-Aplicación Next.js (App Router, TypeScript) de Chasqui Pet. Por ahora incluye el
-health check y la **pantalla pública de turnos** de la sala de espera.
+Aplicación Next.js (App Router, TypeScript) de Chasqui Pet. Incluye el health
+check, la **pantalla pública de turnos** de la sala de espera y el **portal
+clínico**: ingreso por Telegram, buscador de pacientes, historia clínica y el
+formulario completo de consulta (§8.2.5).
 
 ## Requisitos
 
@@ -21,7 +23,9 @@ Opcionales:
 | Variable | Para qué | Valor por defecto |
 |---|---|---|
 | `DATABASE_URL_DIRECTA` | Conexión **sin pgbouncer** para el `LISTEN` de la pantalla. Obligatoria si `DATABASE_URL` apunta a pgbouncer en modo *transaction*, porque ahí `LISTEN` no funciona. | el valor de `DATABASE_URL` |
-| `NOMBRE_CLINICA` | Nombre que se muestra en la pantalla cuando no hay nadie en atención. | `Chasqui Pet` |
+| `NOMBRE_CLINICA` | Nombre que se muestra en la pantalla cuando no hay nadie en atención y en la cabecera del portal. | `Chasqui Pet` |
+| `TELEGRAM_BOT_USERNAME` | Sin arroba. Arma el enlace «Abrir Telegram» de la pantalla de ingreso. Sin ella, el portal indica escribirle `/start` al bot a mano. | — |
+| `WEB_PUBLIC_URL` | Si empieza por `https://`, la cookie de sesión se marca `secure`. En LAN por HTTP se deja como está. | — |
 | `DB_POOL_MAX` | Conexiones máximas del pool de consultas. | `10` |
 | `TZ` | Zona horaria del proceso. | `America/Bogota` |
 
@@ -118,8 +122,34 @@ src/
     api/pantalla/[sede]/stream/route.ts   SSE
     pantalla/[sede]/page.tsx              pantalla (render en servidor)
     pantalla/[sede]/vista-pantalla.tsx    componente cliente (SSE + polling)
+    entrar/page.tsx                       ingreso: código de 6 dígitos
+    entrar/ingreso.tsx                    componente cliente (sondeo del código)
+    api/entrar/route.ts                   crea el challenge
+    api/entrar/[id]/route.ts              lo canjea por sesión y pone la cookie
+    salir/route.ts                        revoca la sesión (POST)
+    (portal)/layout.tsx                   marco del portal; exige sesión
+    (portal)/consultas/page.tsx           bandeja: borradores propios y lo de hoy
+    (portal)/pacientes/page.tsx           buscador
+    (portal)/pacientes/[id]/page.tsx      ficha e historia clínica
+    (portal)/consulta/[id]/page.tsx       consulta: formulario o lectura
+    (portal)/consulta/[id]/formulario.tsx formulario completo (§8.2.5)
+    (portal)/consulta/[id]/acciones.ts    acciones de servidor: guardar y firmar
   lib/
     db.ts                                 pool de pg y cliente de LISTEN
     pantalla.ts                           contrato con pantalla_publica()
     notificaciones.ts                     multiplexor de NOTIFY
+    sesion.ts                             cookie de sesión y permisos
+    clinico.ts                            contrato con las funciones clínicas
 ```
+
+## El portal
+
+Todo lo que cuelga de `(portal)` exige sesión: la comprobación está en el layout
+para que agregar una vista nueva no pueda olvidarse de pedirla. Los permisos
+salen de `v_usuario_permiso` en Postgres (§4); la web sólo lee la lista.
+
+Ninguna pantalla decide nada clínico. Guardar, firmar y agregar adendas llaman a
+las mismas funciones SQL que usa el bot (`guardar_consulta_completa`,
+`firmar_consulta`, `agregar_adenda`), así que los rangos del examen, los campos
+obligatorios para firmar y la inmutabilidad de lo firmado se validan una sola
+vez y en un solo sitio.

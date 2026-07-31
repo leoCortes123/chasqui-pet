@@ -1,0 +1,96 @@
+/* -----------------------------------------------------------------------------
+   Pantalla de ingreso al portal (§11.1).
+   Una sola tarjeta centrada: lo único que importa es el código.
+----------------------------------------------------------------------------- */
+
+.pantalla {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(31, 111, 168, 0.22), transparent 65%),
+    #0b1016;
+}
+
+.tarjeta {
+  width: min(26rem, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1.75rem;
+  border: 1px solid rgba(233, 238, 245, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: center;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.subtitulo {
+  margin: 0 0 0.5rem;
+  color: rgba(233, 238, 245, 0.6);
+  font-size: 0.95rem;
+}
+
+.instruccion {
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* El código se lee en voz alta y se compara con el celular: separado y
+   monoespaciado para no confundir un 0 con una O. */
+.codigo {
+  margin: 0.5rem 0;
+  font-family: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, monospace;
+  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em; /* compensa el espaciado del último dígito */
+  color: #ffffff;
+}
+
+.boton {
+  display: inline-block;
+  padding: 0.7rem 1.4rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: #1f6fa8;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.boton:hover {
+  background: #2a86c6;
+}
+
+.nota {
+  margin: 0;
+  color: rgba(233, 238, 245, 0.6);
+  font-size: 0.9rem;
+}
+
+.aviso {
+  margin: 0;
+  color: #ffcf70;
+  font-weight: 600;
+}
+
+.pie {
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(233, 238, 245, 0.1);
+  color: rgba(233, 238, 245, 0.45);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}

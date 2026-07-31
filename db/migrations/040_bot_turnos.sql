@@ -281,9 +281,12 @@ BEGIN
     DECLARE v_arg text := trim(substring(v_texto_in FROM 7)); v_sede_qr uuid;
     BEGIN
       IF v_arg LIKE 'web-%' THEN
-        -- Inicio de sesión en el portal: paso 7 del plan.
+        -- Ingreso al portal de alguien sin usuario aprovisionado. Se
+        -- deniega sin decir si el enlace era válido (§11.1.4): quien
+        -- prueba enlaces ajenos no debe poder distinguir un código real
+        -- de uno inventado.
         RETURN jsonb_build_object('acciones', jsonb_build_array(accion_enviar(v_chat_id,
-          'El acceso al portal aún no está habilitado en esta versión.')));
+          'No se pudo iniciar sesión. Habla con el administrador de la clínica.')));
       END IF;
 
       IF v_arg LIKE 'turno-%' THEN
@@ -340,6 +343,7 @@ BEGIN
         '/menu — menú principal' || E'\n' ||
         '/cola — pacientes en espera' || E'\n' ||
         '/stock — existencias y alertas de inventario' || E'\n' ||
+        '/sesiones — sesiones abiertas en el portal' || E'\n' ||
         '/ayuda — esta ayuda')));
     END IF;
 
