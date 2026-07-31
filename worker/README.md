@@ -56,10 +56,11 @@ id, tipo, desenlace y milisegundos.
 | `notificar_turnos_proximos` | `{sede_id}` | «⏳ Faltan 2 turnos para el tuyo…» a los primeros de la cola, sin repetir. |
 | `notificar_superadmin` | `{texto}` | Alarmas del sistema a todo superadmin activo con chat. |
 | `recordar_llamado_vencido` | `{sede_id}` | Le recuerda al veterinario un turno llamado que no se presentó, con botones *No se presentó* / *Ya llegó*. |
-| `abrir_cuenta_turno` | `{turno_id}` | No-op explícito: el módulo de cobro es el paso 5 (§7). |
+| `abrir_cuenta_turno` | `{turno_id}` | Abre la cuenta del turno que entra en atención (§7.2.1). Idempotente: reintentar no la duplica. |
 | `alertas_inventario` | `{}` o `{forzar}` | Aviso diario (§6.2) a quien administra inventario: bajo mínimo, por vencer y vencidos. Si no hay nada que reportar no envía nada; `forzar` lo manda igual. |
-| `agregar_linea_cuenta` | `{movimiento_id, turno_id}` | No-op explícito: la línea en la cuenta la crea el módulo de cobro, paso 5 (§7.1). |
+| `agregar_linea_cuenta` | `{movimiento_id, turno_id}` | Cobra el medicamento despachado, al precio de venta del catálogo (§6.3). Idempotente por `movimiento_id`. Si la salida no está atada a una visita o la cuenta ya se cerró, completa sin cobrar. |
 | `enviar_resumen_consulta` | `{consulta_id}` | Al firmar una consulta, le manda al dueño diagnóstico, tratamiento y recomendaciones. Exige consentimiento explícito y `chat_id` (§12, Ley 1581); sin alguno de los dos completa sin enviar nada. |
+| `enviar_recibo` | `{cuenta_id}` | Al cerrar la cuenta, le manda el recibo al dueño. Exige consentimiento explícito y `chat_id` (§12, Ley 1581); sin alguno de los dos completa sin enviar nada. |
 | `notificar_inicio_sesion` | `{sesion_id}` | «Entraste al portal», con hora, IP y dispositivo (§11.1). Que el dueño de la cuenta se entere es la mitad del control de acceso. |
 
 ## Cómo agregar un manejador

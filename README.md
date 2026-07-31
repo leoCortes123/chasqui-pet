@@ -4,11 +4,12 @@ Sistema de gestión para clínica veterinaria, operado principalmente desde
 Telegram. Sistema nuevo e independiente: no comparte código ni base de datos con
 Chasqui.
 
-> **Estado: paso 4 de 8.** Están terminados el esquema base con identidad, roles
-> y permisos, el módulo de turnos, el de inventario y el clínico —dueños,
-> pacientes e historia clínica, por chat y por formulario web—. Cobro,
-> proveedores y el resto del portal administrativo son los pasos siguientes. La
-> guía de operación para el personal de la clínica se escribe en el paso 8.
+> **Estado: paso 5 de 8.** Están terminados el esquema base con identidad, roles
+> y permisos, el módulo de turnos, el de inventario, el clínico —dueños,
+> pacientes e historia clínica, por chat y por formulario web— y el de cobro:
+> cuenta, descuentos, pagos, recibo y cierre de caja. Proveedores y el resto del
+> portal administrativo son los pasos siguientes. La guía de operación para el
+> personal de la clínica se escribe en el paso 8.
 
 ## Qué hay funcionando
 
@@ -43,6 +44,20 @@ Chasqui.
   confirmación en el bot y aviso al usuario cada vez que se abre una sesión.
 - Resumen de la consulta al dueño por Telegram al firmarla, sólo si dio su
   consentimiento (Ley 1581 de 2012), con mecanismo de supresión de sus datos.
+- La cuenta se abre sola cuando el turno entra en atención, y cada medicamento
+  despachado cae en ella al precio del catálogo sin que nadie lo teclee.
+- Cobro desde el chat en tres toques: elegir la cuenta, el medio de pago y
+  cerrar. El valor no se pregunta: por defecto es lo que falta, y en efectivo se
+  acepta de más y se informa el cambio.
+- Descuento con motivo escrito y responsable, sólo para quien tiene el permiso.
+  Nunca borra ni edita líneas: el subtotal se conserva y la rebaja va aparte.
+- Pagos y descuentos de sólo agregar: un error se corrige con un reverso, que
+  también queda. Anular una cuenta cerrada revierte sus pagos y la caja sigue
+  cuadrando.
+- Recibo consecutivo al cerrar, enviado al Telegram del dueño si dio su
+  consentimiento. Es un documento interno y lo dice: no es factura electrónica.
+- Caja del día con base, esperado y contado; el cierre no deja cuadrar si quedan
+  cuentas con saldo, y avisa al administrador si hay diferencia.
 - Cola de tareas con reintentos, espera creciente y bandeja de fallidas.
 - Copia de seguridad diaria automática con 14 días de retención.
 
@@ -136,6 +151,18 @@ menú no exige desplegar nada.
 Los detalles del modelo y las decisiones de diseño están en
 [`docs/modelo-datos.md`](docs/modelo-datos.md). La especificación completa del
 producto está en [`chasquipet.md`](chasquipet.md).
+
+## Comandos del bot
+
+| Comando | Para qué |
+|---|---|
+| `/menu` | Menú principal, armado según los permisos de quien escribe. |
+| `/cola` | Pacientes en espera. |
+| `/stock` | Existencias y alertas de inventario. |
+| `/cobrar` | Cuentas abiertas por cobrar. |
+| `/caja` | Estado de la caja del día. |
+| `/sesiones` | Sesiones abiertas en el portal, con opción de revocarlas. |
+| `/ayuda` | La lista de arriba. |
 
 ## Advertencia legal
 
