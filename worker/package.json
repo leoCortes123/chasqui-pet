@@ -1,0 +1,18 @@
+{
+  "name": "chasquipet-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Worker de tareas asincronas de Chasqui Pet: procesa la cola tarea_async",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

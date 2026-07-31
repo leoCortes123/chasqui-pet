@@ -1,0 +1,93 @@
+{
+  "name": "Chasqui Pet — Vigilancia de turnos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "b2000000-0000-4000-8000-000000000001",
+      "name": "Cada minuto",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -620,
+        0
+      ],
+      "notes": "Un minuto es suficiente: el timeout de llamado por defecto son 180 segundos."
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Encola un recordatorio por cada sede con turnos llamados vencidos.\n-- La clave de unicidad evita apilar avisos si el veterinario no responde.\nSELECT encolar_tarea(\n         'recordar_llamado_vencido',\n         jsonb_build_object('sede_id', s.id),\n         5,\n         'llamado_vencido_' || s.id || '_' || to_char(now(), 'YYYYMMDDHH24MI')\n       ) AS tarea_id,\n       s.nombre AS sede\n  FROM sede s\n WHERE s.activa\n   AND EXISTS (SELECT 1 FROM turnos_llamado_vencido(s.id));",
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000002",
+      "name": "Turnos llamados sin respuesta",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -380,
+        -110
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Red de seguridad de la cola de tareas (§2.2.4): si un worker muere\n-- a mitad de una tarea, ésta queda en 'procesando' para siempre.\nSELECT rescatar_tareas_colgadas(15) AS rescatadas;",
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000003",
+      "name": "Rescatar tareas colgadas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -380,
+        110
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada minuto": {
+      "main": [
+        [
+          {
+            "node": "Turnos llamados sin respuesta",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Rescatar tareas colgadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

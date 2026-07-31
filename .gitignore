@@ -1,0 +1,49 @@
+# --- Secretos ---------------------------------------------------------------
+# Nunca subir credenciales al repositorio. Solo se versiona .env.example
+.env
+.env.*
+!.env.example
+
+# --- Dependencias -----------------------------------------------------------
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+
+# --- Next.js / build --------------------------------------------------------
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Respaldos y datos locales ----------------------------------------------
+backups/
+*.dump
+*.sql.gz
+pgdata/
+
+# --- Adjuntos subidos desde el chat (facturas, fotos) -----------------------
+uploads/
+web/public/uploads/
+
+# --- Registros y temporales -------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-error.log*
+tmp/
+.cache/
+
+# --- Sistema operativo / editores -------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# --- Cobertura y pruebas ----------------------------------------------------
+coverage/
+.nyc_output/
