@@ -1,9 +1,8 @@
 # Modelo de datos — Chasqui Pet
 
 Este documento refleja el esquema **realmente implementado** en `db/migrations/`
-(pasos 1 a 6 del plan de implementación) y, aparte, lo que queda **fuera del
-MVP** o pendiente de los pasos 7 y 8, tal como está especificado en
-`chasquipet.md`.
+—el MVP completo, pasos 1 a 8 del plan— y, aparte, lo que quedó **fuera del
+MVP** a propósito, tal como está especificado en `chasquipet.md`.
 
 ---
 
@@ -581,9 +580,11 @@ reescribir turnos.
 - **Órdenes de compra, recepciones parciales y cuentas por pagar.** El paso 6
   registra la factura que ya llegó, no el ciclo de compra completo (§9).
 
-**Pendiente de implementar, sin tablas nuevas:** los pasos 7 (portal
-administrativo y reportes) y 8 (jobs, backup y documentación de operación)
-trabajan sobre el esquema que ya existe.
+**Sin tablas propias:** los reportes de §10, el portal administrativo y los jobs
+diarios trabajan sobre el esquema de arriba. Están en `080_reportes.sql`,
+`085_admin.sql` y `088_mantenimiento.sql`, y son funciones, no estructuras
+nuevas: un reporte que necesita su propia tabla casi siempre es una señal de que
+al modelo le falta algo.
 
 ## 3. Decisiones del modelo
 

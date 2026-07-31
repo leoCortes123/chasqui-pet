@@ -51,6 +51,24 @@ docker compose exec -T n8n rm -f "${TMP_REMOTO}"
 echo "==> Importando los workflows"
 docker compose exec -T n8n n8n import:workflow --separate --input=/workflows
 
+# Cada JSON del repositorio lleva un `id` fijo, así que reimportar ACTUALIZA
+# el workflow en vez de crear otro. Lo que sobra son los que quedaron de
+# importaciones viejas —cuando el id lo inventaba n8n— y los que se hayan
+# creado a mano desde la interfaz: dos copias del webhook de Telegram
+# significan dos cron disparando y dos veces cada aviso.
+#
+# La versión de n8n del compose no trae `delete:workflow`, así que se
+# borran de su propia base, que es nuestra. Sólo sobreviven los ids que
+# están versionados aquí.
+echo "==> Quitando workflows que no están en el repositorio"
+IDS_VERSIONADOS=$(for f in n8n/workflows/*.json; do
+                    sed -n 's/^ *"id": *"\([^"]*\)".*/\1/p' "$f" | head -1
+                  done | sed "s/^/'/;s/$/'/" | paste -sd,)
+
+docker compose exec -T db psql -U "${POSTGRES_USER}" -d "${N8N_DB_NAME}" -tAc \
+  "DELETE FROM workflow_entity WHERE id NOT IN (${IDS_VERSIONADOS});" |
+  sed 's/^/    sobrantes borrados: /'
+
 echo "==> Publicando los workflows"
 # `update:workflow --all --active=true` quedó obsoleto: ahora se publica uno
 # a uno por id. Los ids salen del propio n8n, no del JSON.

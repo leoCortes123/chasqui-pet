@@ -4,13 +4,13 @@ Sistema de gestión para clínica veterinaria, operado principalmente desde
 Telegram. Sistema nuevo e independiente: no comparte código ni base de datos con
 Chasqui.
 
-> **Estado: paso 7 de 8.** Están terminados el esquema base con identidad, roles
+> **Estado: terminado (paso 8 de 8).** Están terminados el esquema base con identidad, roles
 > y permisos, el módulo de turnos, el de inventario, el clínico —dueños,
 > pacientes e historia clínica, por chat y por formulario web—, el de cobro
 > —cuenta, descuentos, pagos, recibo y cierre de caja—, el de compras
 > —proveedores y entradas de mercancía con soporte— y el portal administrativo
-> con los nueve reportes. Queda el paso 8: jobs, respaldos, datos de demo al día
-> y la guía de operación para el personal de la clínica.
+> con los nueve reportes. Los jobs, los respaldos, los datos de demostración y la
+> guía de operación para el personal están al día.
 
 ## Qué hay funcionando
 
@@ -76,6 +76,9 @@ Chasqui.
   caliente, auditoría de sólo lectura y bandeja de tareas fallidas.
 - Cola de tareas con reintentos, espera creciente y bandeja de fallidas.
 - Copia de seguridad diaria automática con 14 días de retención.
+- Limpieza diaria de lo que crece sin aportar —updates de Telegram,
+  conversaciones vencidas, tareas ya completadas—. La auditoría y los
+  movimientos de inventario no se purgan nunca.
 
 ## Puesta en marcha
 
@@ -167,6 +170,12 @@ menú no exige desplegar nada.
 Los detalles del modelo y las decisiones de diseño están en
 [`docs/modelo-datos.md`](docs/modelo-datos.md). La especificación completa del
 producto está en [`chasquipet.md`](chasquipet.md).
+
+## Para el personal de la clínica
+
+[`docs/guia-operacion.md`](docs/guia-operacion.md) — cómo se usa el sistema día a
+día, sin una sola palabra técnica: la cola, la consulta, la salida de
+medicamentos, el cobro, el cierre de caja y qué hacer cuando algo sale mal.
 
 ## Comandos del bot
 
