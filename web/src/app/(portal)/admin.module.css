@@ -1,0 +1,233 @@
+/* -----------------------------------------------------------------------------
+   Piezas de las vistas administrativas: tarjetas del dashboard, tablas de
+   reportes y formularios de configuración. Complementa vistas.module.css;
+   nada de lo de allí se repite aquí.
+----------------------------------------------------------------------------- */
+
+.seccion {
+  margin-top: 2.5rem;
+}
+
+.migaja {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.migaja a,
+.enlace {
+  color: #6db3e2;
+  text-decoration: none;
+}
+
+.migaja a:hover,
+.enlace:hover {
+  text-decoration: underline;
+}
+
+/* --- Tarjetas ------------------------------------------------------------ */
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.75rem;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px solid rgba(233, 238, 245, 0.12);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-decoration: none;
+}
+
+.tarjeta:hover {
+  border-color: rgba(233, 238, 245, 0.32);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tarjetaTitulo {
+  font-weight: 700;
+}
+
+.tarjetaDetalle {
+  color: rgba(233, 238, 245, 0.55);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* --- Indicadores del dashboard ------------------------------------------- */
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.indicador {
+  padding: 1rem;
+  border: 1px solid rgba(233, 238, 245, 0.12);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.indicadorValor {
+  display: block;
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.indicadorEtiqueta {
+  display: block;
+  margin-top: 0.2rem;
+  color: rgba(233, 238, 245, 0.55);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.alerta .indicadorValor {
+  color: #ffcf70;
+}
+
+.grave .indicadorValor {
+  color: #ff9d92;
+}
+
+.bien .indicadorValor {
+  color: #6ad69a;
+}
+
+/* --- Tablas -------------------------------------------------------------- */
+
+/* Las tablas anchas se desplazan dentro de su caja; la página nunca se
+   desplaza de lado. */
+.desplazable {
+  overflow-x: auto;
+  border: 1px solid rgba(233, 238, 245, 0.12);
+  border-radius: 0.75rem;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.tabla th,
+.tabla td {
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(233, 238, 245, 0.08);
+}
+
+.tabla th {
+  position: sticky;
+  top: 0;
+  background: #131a22;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(233, 238, 245, 0.6);
+}
+
+.tabla tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.derecha {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.resaltada {
+  background: rgba(31, 111, 168, 0.18);
+}
+
+.tenue {
+  color: rgba(233, 238, 245, 0.45);
+}
+
+/* --- Filtros ------------------------------------------------------------- */
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: rgba(233, 238, 245, 0.65);
+}
+
+.filtro .campo,
+.filtro input,
+.filtro select {
+  min-width: 10rem;
+}
+
+/* --- Formularios en línea dentro de tablas ------------------------------- */
+
+.enLinea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.compacto {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(233, 238, 245, 0.2);
+  border-radius: 0.45rem;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  max-width: 9rem;
+}
+
+.botonCompacto {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(233, 238, 245, 0.25);
+  border-radius: 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botonCompacto:hover {
+  border-color: rgba(233, 238, 245, 0.5);
+}
+
+.peligro {
+  border-color: rgba(255, 138, 128, 0.4);
+  color: #ff9d92;
+}
+
+.json {
+  margin: 0;
+  max-width: 32rem;
+  max-height: 8rem;
+  overflow: auto;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  color: rgba(233, 238, 245, 0.6);
+}
