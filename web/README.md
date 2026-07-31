@@ -2,8 +2,9 @@
 
 Aplicación Next.js (App Router, TypeScript) de Chasqui Pet. Incluye el health
 check, la **pantalla pública de turnos** de la sala de espera y el **portal
-clínico**: ingreso por Telegram, buscador de pacientes, historia clínica y el
-formulario completo de consulta (§8.2.5).
+administrativo**: ingreso por Telegram, panel del día, historia clínica,
+catálogo de medicamentos, compras, los nueve reportes de §10 con exportación a
+CSV, y la administración de usuarios, configuración, auditoría y tareas.
 
 ## Requisitos
 
@@ -128,18 +129,29 @@ src/
     api/entrar/[id]/route.ts              lo canjea por sesión y pone la cookie
     salir/route.ts                        revoca la sesión (POST)
     (portal)/layout.tsx                   marco del portal; exige sesión
+    (portal)/page.tsx                     panel del día: cola, caja y stock crítico
     (portal)/consultas/page.tsx           bandeja: borradores propios y lo de hoy
     (portal)/pacientes/page.tsx           buscador
     (portal)/pacientes/[id]/page.tsx      ficha e historia clínica
     (portal)/consulta/[id]/page.tsx       consulta: formulario o lectura
     (portal)/consulta/[id]/formulario.tsx formulario completo (§8.2.5)
     (portal)/consulta/[id]/acciones.ts    acciones de servidor: guardar y firmar
+    (portal)/inventario/page.tsx          catálogo y precios, editables en la tabla
+    (portal)/inventario/movimientos/      libro de movimientos, sólo lectura
+    (portal)/compras/page.tsx             entradas y proveedores
+    (portal)/reportes/page.tsx            índice, filtrado por permisos
+    (portal)/reportes/[clave]/page.tsx    cualquier reporte de la lista
+    (portal)/reportes/trazabilidad/       qué pacientes recibieron un lote
+    (portal)/admin/                       usuarios, configuración, auditoría, tareas
+    api/reportes/[clave]/route.ts         el mismo reporte, en CSV
   lib/
     db.ts                                 pool de pg y cliente de LISTEN
     pantalla.ts                           contrato con pantalla_publica()
     notificaciones.ts                     multiplexor de NOTIFY
     sesion.ts                             cookie de sesión y permisos
     clinico.ts                            contrato con las funciones clínicas
+    reportes.ts                           los reportes de §10, declarados como datos
+    formato.ts                            pesos, fechas y números en es-CO
 ```
 
 ## El portal
@@ -152,4 +164,20 @@ Ninguna pantalla decide nada clínico. Guardar, firmar y agregar adendas llaman 
 las mismas funciones SQL que usa el bot (`guardar_consulta_completa`,
 `firmar_consulta`, `agregar_adenda`), así que los rangos del examen, los campos
 obligatorios para firmar y la inmutabilidad de lo firmado se validan una sola
-vez y en un solo sitio.
+vez y en un solo sitio. Lo mismo vale para la administración: cada acción de
+servidor llama a una función de `085_admin.sql`, que vuelve a exigir el permiso
+con el `usuario_id` de la sesión y escribe la auditoría. El `exigirPermiso` de
+la web es la segunda cerradura, no la única.
+
+### Reportes
+
+Los reportes están declarados como datos en `lib/reportes.ts`: clave, permiso,
+la función SQL que los resuelve y cómo se pinta cada columna. La página
+`/reportes/[clave]` y la ruta `/api/reportes/[clave]` sirven a todos, así que
+**agregar un reporte es agregar una función SQL y una entrada en esa lista**,
+sin escribir una pantalla.
+
+La exportación es la misma consulta con otra cabecera HTTP, no una segunda
+consulta que pueda quedar desalineada. El CSV sale con separador `;` y BOM, que
+es lo que Excel en español abre sin preguntar nada; los números van crudos, para
+que se puedan sumar en la hoja de cálculo.

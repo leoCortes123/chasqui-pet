@@ -4,13 +4,13 @@ Sistema de gestión para clínica veterinaria, operado principalmente desde
 Telegram. Sistema nuevo e independiente: no comparte código ni base de datos con
 Chasqui.
 
-> **Estado: paso 6 de 8.** Están terminados el esquema base con identidad, roles
+> **Estado: paso 7 de 8.** Están terminados el esquema base con identidad, roles
 > y permisos, el módulo de turnos, el de inventario, el clínico —dueños,
 > pacientes e historia clínica, por chat y por formulario web—, el de cobro
-> —cuenta, descuentos, pagos, recibo y cierre de caja— y el de compras:
-> proveedores y entradas de mercancía con soporte. El portal administrativo con
-> sus reportes es el paso siguiente. La guía de operación para el personal de la
-> clínica se escribe en el paso 8.
+> —cuenta, descuentos, pagos, recibo y cierre de caja—, el de compras
+> —proveedores y entradas de mercancía con soporte— y el portal administrativo
+> con los nueve reportes. Queda el paso 8: jobs, respaldos, datos de demo al día
+> y la guía de operación para el personal de la clínica.
 
 ## Qué hay funcionando
 
@@ -65,6 +65,15 @@ Chasqui.
   corrige a gusto, y al confirmar entra completa o no entra nada.
 - Cada lote sabe de qué compra y de qué proveedor vino, así que se puede
   responder quién recibió un lote concreto el día que haya un retiro de producto.
+- Portal web con panel del día —cola por consultorio, caja y stock crítico—,
+  catálogo de precios editable en la misma tabla y libro de movimientos.
+- Los nueve reportes: stock, consumo, turnos por día y por hora, ocupación,
+  caja, descuentos, margen contra el costo del lote que salió, compras,
+  consultas, diagnósticos y pacientes. Todos con filtro de fechas y CSV.
+- Trazabilidad de lote en el portal: se escribe el número impreso en la caja y
+  sale la lista de dueños a los que hay que llamar, con su teléfono.
+- Administración: personal y permisos, configuración operativa y tarifas en
+  caliente, auditoría de sólo lectura y bandeja de tareas fallidas.
 - Cola de tareas con reintentos, espera creciente y bandeja de fallidas.
 - Copia de seguridad diaria automática con 14 días de retención.
 
