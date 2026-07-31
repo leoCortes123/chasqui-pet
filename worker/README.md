@@ -59,6 +59,8 @@ id, tipo, desenlace y milisegundos.
 | `abrir_cuenta_turno` | `{turno_id}` | No-op explícito: el módulo de cobro es el paso 5 (§7). |
 | `alertas_inventario` | `{}` o `{forzar}` | Aviso diario (§6.2) a quien administra inventario: bajo mínimo, por vencer y vencidos. Si no hay nada que reportar no envía nada; `forzar` lo manda igual. |
 | `agregar_linea_cuenta` | `{movimiento_id, turno_id}` | No-op explícito: la línea en la cuenta la crea el módulo de cobro, paso 5 (§7.1). |
+| `enviar_resumen_consulta` | `{consulta_id}` | Al firmar una consulta, le manda al dueño diagnóstico, tratamiento y recomendaciones. Exige consentimiento explícito y `chat_id` (§12, Ley 1581); sin alguno de los dos completa sin enviar nada. |
+| `notificar_inicio_sesion` | `{sesion_id}` | «Entraste al portal», con hora, IP y dispositivo (§11.1). Que el dueño de la cuenta se entere es la mitad del control de acceso. |
 
 ## Cómo agregar un manejador
 
@@ -99,9 +101,8 @@ Reglas:
   el usuario bloqueó el bot y reintentar no lo va a desbloquear.
 - Cualquier otro error → lanza, y la tarea se reintenta con el backoff de la base.
 
-## Pendiente de migración
+## Deduplicación de avisos
 
-`sql/010_aviso_turno.sql` crea la tabla `aviso_turno_enviado`, que evita repetir
-el aviso de «faltan N turnos» en cada pasada. **Debe moverse a `db/migrations/`.**
-Mientras no exista, el worker lo registra en el log y sigue funcionando sin
-deduplicar.
+`db/migrations/035_aviso_turno.sql` crea `aviso_turno_enviado`, que evita repetir
+el aviso de «faltan N turnos» en cada pasada. Si esa tabla no existiera, el
+worker lo registra en el log y sigue funcionando sin deduplicar.

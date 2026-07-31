@@ -1,8 +1,8 @@
 # Modelo de datos — Chasqui Pet
 
 Este documento refleja el esquema **realmente implementado** en `db/migrations/`
-(pasos 1 a 3 del plan de implementación) y, aparte, el modelo **previsto** para
-los pasos 4 a 6, tal como está especificado en `chasquipet.md`.
+(pasos 1 a 4 del plan de implementación) y, aparte, el modelo **previsto** para
+los pasos 5 y 6, tal como está especificado en `chasquipet.md`.
 
 ---
 
@@ -38,6 +38,20 @@ erDiagram
     lote ||--o{ movimiento_inventario : "registra"
     turno ||--o{ movimiento_inventario : "justifica"
     usuario ||--o{ movimiento_inventario : "despacha"
+
+    dueno ||--o{ paciente : "tiene"
+    dueno ||--o{ turno : "acompana"
+    paciente ||--o{ turno : "ocupa"
+    paciente ||--o{ consulta : "recibe"
+    paciente ||--o{ movimiento_inventario : "consume"
+    consulta ||--o{ movimiento_inventario : "justifica"
+    consulta ||--o{ consulta_adenda : "se corrige con"
+    turno ||--o| consulta : "origina"
+    cita ||--o| consulta : "origina"
+    cita ||--o| turno : "se convierte en"
+    tipo_servicio ||--o{ cita : "clasifica"
+    usuario ||--o{ consulta : "firma"
+    usuario ||--o{ disponibilidad : "atiende en"
 
     sede {
         uuid id PK
@@ -255,6 +269,87 @@ erDiagram
         timestamptz ventana_at
         int conteo
     }
+
+    dueno {
+        uuid id PK
+        text nombre_completo
+        text telefono
+        text telefono_digitos
+        text tipo_documento
+        text numero_documento
+        bigint telegram_chat_id
+        text direccion
+        text barrio
+        boolean consentimiento_datos
+        timestamptz consentimiento_fecha
+        boolean activo
+    }
+
+    paciente {
+        uuid id PK
+        uuid dueno_id FK
+        text nombre
+        text especie
+        text raza
+        text sexo
+        boolean esterilizado
+        date fecha_nacimiento_aprox
+        text color_senas
+        numeric peso_ultimo_kg
+        text alergias
+        text estado
+    }
+
+    consulta {
+        uuid id PK
+        uuid turno_id FK
+        uuid cita_id FK
+        uuid paciente_id FK
+        uuid dueno_id FK
+        uuid veterinario_id FK
+        uuid consultorio_id FK
+        date fecha
+        text motivo_consulta
+        text anamnesis
+        jsonb examen_fisico
+        text diagnostico_presuntivo
+        text diagnostico_definitivo
+        text plan_tratamiento
+        text recomendaciones
+        text remision_externa
+        date proxima_revision
+        text estado
+        timestamptz firmada_at
+    }
+
+    consulta_adenda {
+        bigint id PK
+        uuid consulta_id FK
+        text texto
+        uuid usuario_id FK
+        timestamptz created_at
+    }
+
+    cita {
+        uuid id PK
+        uuid sede_id FK
+        uuid paciente_id FK
+        uuid tipo_servicio_id FK
+        uuid veterinario_id FK
+        uuid turno_id FK
+        timestamptz inicio_at
+        timestamptz fin_at
+        text estado
+    }
+
+    disponibilidad {
+        uuid id PK
+        uuid veterinario_id FK
+        uuid consultorio_id FK
+        int dia_semana
+        time hora_inicio
+        time hora_fin
+    }
 ```
 
 | Entidad | Para qué sirve |
@@ -268,6 +363,11 @@ erDiagram
 | `tipo_servicio` | Consulta general, vacunación, control, urgencia. Define el prefijo del turno y su prioridad base. |
 | `turno` | El turno de un paciente en la cola del día. Es la entidad central del paso 2. |
 | `sesion_consultorio` | Qué veterinario está en qué consultorio en este momento. |
+| `dueno` | Quién trae al animal. Sólo el nombre es obligatorio: exigir documento frena la atención. |
+| `paciente` | El animal. Puede no tener dueño registrado —un callejero se atiende igual. |
+| `consulta` | El registro clínico. Nace como borrador y sólo vale cuando se firma. |
+| `consulta_adenda` | Correcciones posteriores a la firma. De sólo agregar: lo firmado no se reescribe. |
+| `cita` / `disponibilidad` | Agendamiento. **Fuera del MVP** (§3): las tablas existen para que un turno y una cita converjan en la misma `consulta`, pero nada las expone todavía. |
 | `medicamento` | El catálogo, con el precio de venta y el mínimo por debajo del cual hay que pedir. |
 | `lote` | La existencia física de un medicamento, con su vencimiento y el costo al que entró. |
 | `movimiento_inventario` | Cada entrada, salida, ajuste o baja. Inmutable: es la fuente de verdad del stock. |
@@ -283,27 +383,29 @@ erDiagram
 
 ### Las columnas sin llave foránea
 
-`turno.dueno_id`, `turno.paciente_id`, `turno.consulta_id`, `turno.cuenta_id`,
-`movimiento_inventario.consulta_id`, `movimiento_inventario.paciente_id`,
-`movimiento_inventario.cuenta_linea_id` y `lote.entrada_id` existen ya como
-`uuid`, pero todavía **no** tienen `REFERENCES`: las tablas a las que apuntan se
-crean en los pasos 4, 5 y 6. Están declaradas desde ahora para que los módulos de
-turnos e inventario no haya que tocarlos cuando lleguen — la misma razón por la
-que `chasquipet.md` §3 pide modelar las citas sin implementarlas. Las llaves
-foráneas se añaden con `ALTER TABLE` en las migraciones de esos pasos.
+`turno.cuenta_id`, `movimiento_inventario.cuenta_linea_id` y `lote.entrada_id`
+existen ya como `uuid`, pero todavía **no** tienen `REFERENCES`: las tablas a las
+que apuntan se crean en los pasos 5 y 6. Están declaradas desde ahora para que
+los módulos de turnos e inventario no haya que tocarlos cuando lleguen — la misma
+razón por la que `chasquipet.md` §3 pide modelar las citas sin implementarlas.
+Las llaves foráneas se añaden con `ALTER TABLE` en las migraciones de esos pasos,
+igual que `050_pacientes.sql` acaba de hacer con `turno.dueno_id`,
+`turno.paciente_id`, `turno.consulta_id`, `movimiento_inventario.consulta_id` y
+`movimiento_inventario.paciente_id`.
 
-Mientras tanto, `movimiento_inventario.turno_id` sí es una llave foránea real y
-es lo único que ata una salida de medicamento a la visita en que se despachó. En
-el paso 4, cuando existan `paciente` y `consulta`, el flujo de salida las
-rellenará sin cambiar nada de lo que ya está escrito.
+Desde el paso 4, una salida de medicamento queda atada a la visita
+(`movimiento_inventario.turno_id`), al animal y a la consulta. El flujo de salida
+no cambió para conseguirlo: `salida_medicamento()` lee el turno que el
+veterinario tiene en atención y copia de ahí `paciente_id` y `consulta_id`.
 
 ---
 
-## 2. Pendiente (pasos 4 a 6 del plan)
+## 2. Pendiente (pasos 5 y 6 del plan)
 
-Modelo previsto según `chasquipet.md` §7.1, §8.1 y §9. **Todavía no existe en la
-base de datos.** `medicamento`, `lote` y `movimiento_inventario` aparecen aquí
-sólo como referencia de las relaciones que les faltan por conectar.
+Modelo previsto según `chasquipet.md` §7.1 y §9. **Todavía no existe en la base
+de datos.** `medicamento`, `lote`, `movimiento_inventario`, `consulta`, `turno` y
+`paciente` aparecen aquí sólo como referencia de las relaciones que les faltan
+por conectar.
 
 ```mermaid
 erDiagram
@@ -312,16 +414,7 @@ erDiagram
     proveedor ||--o{ entrada_inventario : "surte"
     medicamento ||--o{ entrada_linea : "se compra como"
 
-    dueno ||--o{ paciente : "tiene"
-    paciente ||--o{ consulta : "recibe"
-    paciente ||--o{ movimiento_inventario : "consume"
-    consulta ||--o{ movimiento_inventario : "justifica"
-
-    turno ||--o| consulta : "origina"
-    cita ||--o| consulta : "origina"
-    tipo_servicio ||--o{ cita : "clasifica"
     tipo_servicio ||--o{ tarifa : "se cobra segun"
-    disponibilidad ||--o{ cita : "habilita"
 
     consulta ||--o| cuenta : "se cobra en"
     cuenta ||--o{ cuenta_linea : "detalla"
@@ -357,42 +450,6 @@ erDiagram
         date fecha_vencimiento
         numeric cantidad
         numeric costo_unitario
-    }
-
-    dueno {
-        uuid id PK
-        text nombre_completo
-        text telefono
-        text numero_documento
-        bigint telegram_chat_id
-        boolean consentimiento_datos
-    }
-
-    paciente {
-        uuid id PK
-        uuid dueno_id FK
-        text nombre
-        text especie
-        text raza
-        text sexo
-        numeric peso_ultimo_kg
-        text alergias
-        text estado
-    }
-
-    consulta {
-        uuid id PK
-        uuid turno_id FK
-        uuid cita_id FK
-        uuid paciente_id FK
-        uuid veterinario_id FK
-        text motivo_consulta
-        jsonb examen_fisico
-        text diagnostico_definitivo
-        text plan_tratamiento
-        text remision_externa
-        text estado
-        timestamptz firmada_at
     }
 
     tarifa {
@@ -453,33 +510,15 @@ erDiagram
         text estado
     }
 
-    cita {
-        uuid id PK
-        uuid tipo_servicio_id FK
-        uuid paciente_id FK
-        timestamptz inicio_at
-        text estado
-    }
-
-    disponibilidad {
-        uuid id PK
-        uuid consultorio_id FK
-        int dia_semana
-        time hora_inicio
-        time hora_fin
-    }
 ```
 
 | Entidad | Para qué servirá | Paso |
 |---|---|---|
-| `dueno` / `paciente` | Quién trae al animal y qué animal es. | 4 |
-| `consulta` | El registro clínico, válido sólo cuando se firma. | 4 |
 | `tarifa` | Cuánto vale cada servicio. | 5 |
 | `cuenta` / `cuenta_linea` | La cuenta de la atención y su detalle. | 5 |
 | `descuento` / `pago` | Rebajas justificadas y dinero recibido. | 5 |
 | `cierre_caja` | Cuadre del efectivo al final del día. | 5 |
 | `proveedor` / `entrada_inventario` / `entrada_linea` | Compras que ingresan mercancía. | 6 |
-| `cita` / `disponibilidad` | Agendamiento. **Fuera del MVP**: sólo se crean las tablas, sin exponerlas en la interfaz. | — |
 
 ---
 
@@ -532,6 +571,43 @@ módulo, pero inventario, historia clínica y cobro también necesitan botones e
 menú y sus propios callbacks. En vez de copiar el enrutador entero en cada
 migración —que es como acaban desincronizándose— ese archivo declara tres
 funciones vacías (`bot_menu_extra`, `bot_modulo_callback`, `bot_modulo_texto`) que
-las migraciones siguientes reemplazan. `046_bot_inventario.sql` es la primera que
-lo hace: devuelve `NULL` cuando el callback no lleva su prefijo, y entonces el
-enrutador sigue con su comportamiento por defecto.
+las migraciones siguientes reemplazan.
+
+Cada módulo escribe las suyas con su propio prefijo (`bot_inv_*`, `bot_cli_*`,
+`bot_auth_*`) y devuelve `NULL` cuando lo que llegó no es suyo. Las tres
+funciones de enganche quedan reducidas a un despachador de cinco líneas que las
+encadena con `COALESCE`, y que la migración de cada módulo nuevo vuelve a
+escribir añadiéndose al final. Así, agregar el módulo clínico no obligó a tocar
+una sola línea del flujo de salida de medicamento.
+
+**La consulta se guarda a medias y sólo vale cuando se firma.**
+Cada respuesta del chat se persiste al instante en `consulta`, en estado
+`borrador` (§8.2.3). El estado conversacional vive aparte, en
+`conversacion_estado`: son dos cosas distintas a propósito, porque perder el hilo
+de la conversación no puede perder lo que ya se escribió. Al firmar, un trigger
+(`consulta_inmutable`) impide cualquier cambio posterior salvo la anulación; lo
+que faltó se agrega como `consulta_adenda`, con autor y hora. Es la misma regla
+que en inventario: la corrección se añade, no se sobrescribe.
+
+**Lo obligatorio para firmar es el mínimo clínico, no el formulario completo.**
+`firmar_consulta()` exige motivo, diagnóstico y tratamiento, y nada más. Todo lo
+demás —anamnesis, examen físico, recomendaciones, remisión, próxima revisión— es
+opcional y saltable. Un formulario que exige quince campos con el animal en la
+mesa se rellena con basura; uno que exige tres se rellena de verdad.
+
+**El examen físico es `jsonb` y sus opciones son una función.**
+Los campos del examen cambian con la práctica de cada clínica y no queremos una
+migración por cada uno. Lo que sí es estable —el peso— se copia a
+`paciente.peso_ultimo_kg` al firmar. Las opciones de lo enumerable (mucosas,
+hidratación, condición corporal, especie, sexo) viven en `opciones_examen()`, que
+consumen tanto los botones del bot como el `<select>` del portal: una sola
+definición, dos interfaces que no pueden discrepar.
+
+**El portal no tiene usuarios propios.**
+La identidad es la de Telegram, que ya está aprovisionada y con permisos (§4).
+Entrar al portal es pedir un código de seis dígitos, confirmarlo en el bot y
+canjearlo por una sesión (`058_auth_web.sql`). El token viaja una sola vez y en
+`sesion` sólo queda su `sha256`, así que una copia de esa tabla no permite entrar
+a nadie. Esto se adelantó al paso 4 —el resto del portal es el paso 7— porque el
+formulario web de consulta es historia clínica y no podía quedar abierto en la
+red local.
