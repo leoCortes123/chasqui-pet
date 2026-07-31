@@ -15,6 +15,7 @@ INSERT INTO config (clave, valor, tipo, descripcion, editable_ui) VALUES
   ('alerta_vencimiento_dias','30',  'entero',  'Días de anticipación para la primera alerta de vencimiento de lote', true),
   ('alerta_vencimiento_dias_critico','7','entero','Días para la alerta crítica de vencimiento', true),
   ('cantidades_frecuentes',  '1,2,3,5,10', 'texto', 'Cantidades que el bot ofrece como botones al dar salida a un medicamento', true),
+  ('cantidades_entrada',     '10,20,50,100', 'texto', 'Cantidades que el bot ofrece como botones al registrar una entrada de compra', true),
   ('moneda_simbolo',         '$',   'texto',   'Símbolo de moneda en mensajes y recibos', false),
   ('zona_horaria',           'America/Bogota', 'texto', 'Zona horaria operativa de la clínica', false),
   ('nombre_clinica',         'Chasqui Pet',    'texto', 'Nombre que aparece en mensajes del bot y recibos', true),

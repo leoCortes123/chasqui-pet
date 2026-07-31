@@ -4,12 +4,13 @@ Sistema de gestión para clínica veterinaria, operado principalmente desde
 Telegram. Sistema nuevo e independiente: no comparte código ni base de datos con
 Chasqui.
 
-> **Estado: paso 5 de 8.** Están terminados el esquema base con identidad, roles
+> **Estado: paso 6 de 8.** Están terminados el esquema base con identidad, roles
 > y permisos, el módulo de turnos, el de inventario, el clínico —dueños,
-> pacientes e historia clínica, por chat y por formulario web— y el de cobro:
-> cuenta, descuentos, pagos, recibo y cierre de caja. Proveedores y el resto del
-> portal administrativo son los pasos siguientes. La guía de operación para el
-> personal de la clínica se escribe en el paso 8.
+> pacientes e historia clínica, por chat y por formulario web—, el de cobro
+> —cuenta, descuentos, pagos, recibo y cierre de caja— y el de compras:
+> proveedores y entradas de mercancía con soporte. El portal administrativo con
+> sus reportes es el paso siguiente. La guía de operación para el personal de la
+> clínica se escribe en el paso 8.
 
 ## Qué hay funcionando
 
@@ -58,6 +59,12 @@ Chasqui.
   consentimiento. Es un documento interno y lo dice: no es factura electrónica.
 - Caja del día con base, esperado y contado; el cierre no deja cuadrar si quedan
   cuentas con saldo, y avisa al administrador si hay diferencia.
+- Registro de la compra que llegó, desde el chat: proveedor, renglones con lote
+  y vencimiento, y la foto de la factura mandada al chat como un mensaje más.
+- Nada entra al inventario hasta confirmar: la factura se digita en borrador, se
+  corrige a gusto, y al confirmar entra completa o no entra nada.
+- Cada lote sabe de qué compra y de qué proveedor vino, así que se puede
+  responder quién recibió un lote concreto el día que haya un retiro de producto.
 - Cola de tareas con reintentos, espera creciente y bandeja de fallidas.
 - Copia de seguridad diaria automática con 14 días de retención.
 
@@ -159,6 +166,8 @@ producto está en [`chasquipet.md`](chasquipet.md).
 | `/menu` | Menú principal, armado según los permisos de quien escribe. |
 | `/cola` | Pacientes en espera. |
 | `/stock` | Existencias y alertas de inventario. |
+| `/entrada` | Registrar una compra que llegó. |
+| `/proveedores` | Proveedores y su última compra. |
 | `/cobrar` | Cuentas abiertas por cobrar. |
 | `/caja` | Estado de la caja del día. |
 | `/sesiones` | Sesiones abiertas en el portal, con opción de revocarlas. |
