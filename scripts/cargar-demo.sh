@@ -77,6 +77,13 @@ SELECT estado,
  WHERE fecha = hoy_bogota()
  GROUP BY estado
  ORDER BY cuentas DESC;
+
+SELECT estado,
+       count(*)                AS entradas,
+       pesos(sum(valor_total)) AS valor
+  FROM entrada_inventario
+ GROUP BY estado
+ ORDER BY entradas DESC;
 SQL
 
 sede=$(psql_demo -tAc "SELECT id FROM sede WHERE activa ORDER BY created_at LIMIT 1" </dev/null | tr -d '[:space:]')

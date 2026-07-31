@@ -1,8 +1,9 @@
 # Modelo de datos — Chasqui Pet
 
 Este documento refleja el esquema **realmente implementado** en `db/migrations/`
-(pasos 1 a 5 del plan de implementación) y, aparte, el modelo **previsto** para
-el paso 6, tal como está especificado en `chasquipet.md`.
+(pasos 1 a 6 del plan de implementación) y, aparte, lo que queda **fuera del
+MVP** o pendiente de los pasos 7 y 8, tal como está especificado en
+`chasquipet.md`.
 
 ---
 
@@ -35,6 +36,11 @@ erDiagram
 
     medicamento ||--o{ lote : "se almacena en"
     medicamento ||--o{ movimiento_inventario : "se consume como"
+    medicamento ||--o{ entrada_linea : "se compra como"
+    proveedor ||--o{ entrada_inventario : "surte"
+    entrada_inventario ||--o{ entrada_linea : "detalla"
+    entrada_inventario ||--o{ lote : "genera al confirmar"
+    entrada_linea ||--o| lote : "se vuelve"
     lote ||--o{ movimiento_inventario : "registra"
     turno ||--o{ movimiento_inventario : "justifica"
     usuario ||--o{ movimiento_inventario : "despacha"
@@ -146,9 +152,9 @@ erDiagram
         bigint telegram_chat_id
         uuid consultorio_id FK
         uuid veterinario_id FK
-        uuid dueno_id "sin FK todavia"
-        uuid paciente_id "sin FK todavia"
-        uuid consulta_id "sin FK todavia"
+        uuid dueno_id FK
+        uuid paciente_id FK
+        uuid consulta_id FK
         uuid cuenta_id FK
         int veces_llamado
         int veces_reencolado
@@ -184,9 +190,50 @@ erDiagram
         numeric cantidad_inicial
         numeric cantidad_actual "cache del trigger"
         numeric costo_unitario
-        uuid entrada_id "sin FK todavia"
+        uuid entrada_id FK
         boolean bloqueado
         text motivo_bloqueo
+    }
+
+    proveedor {
+        uuid id PK
+        text nombre UK
+        text tipo_documento
+        text numero_documento UK
+        text telefono
+        text email
+        text contacto
+        text direccion
+        boolean activo
+    }
+
+    entrada_inventario {
+        uuid id PK
+        uuid sede_id FK
+        uuid proveedor_id FK
+        text tipo
+        date fecha
+        text documento_soporte
+        numeric valor_total "cache del trigger"
+        text adjunto_file_id "foto de la factura en Telegram"
+        text adjunto_url
+        uuid usuario_id FK
+        text canal
+        text estado "borrador|confirmada|descartada"
+        timestamptz confirmada_at
+        uuid confirmada_por FK
+    }
+
+    entrada_linea {
+        uuid id PK
+        uuid entrada_id FK
+        uuid medicamento_id FK
+        text numero_lote
+        date fecha_vencimiento
+        numeric cantidad
+        numeric costo_unitario
+        numeric valor_total "columna generada"
+        uuid lote_id FK "se llena al confirmar"
     }
 
     movimiento_inventario {
@@ -465,6 +512,9 @@ erDiagram
 | `medicamento` | El catálogo, con el precio de venta y el mínimo por debajo del cual hay que pedir. |
 | `lote` | La existencia física de un medicamento, con su vencimiento y el costo al que entró. |
 | `movimiento_inventario` | Cada entrada, salida, ajuste o baja. Inmutable: es la fuente de verdad del stock. |
+| `proveedor` | A quién se le compra. Sólo el nombre es obligatorio, igual que con el dueño. |
+| `entrada_inventario` | La factura de una compra. Mientras está en `borrador` no ha tocado el inventario. |
+| `entrada_linea` | Cada renglón de la factura. Al confirmar, cada uno se vuelve un lote y un movimiento de entrada. |
 | `tarifa` | Cuánto vale cada servicio. `permite_valor_libre` marca lo que se cobra por acuerdo y el bot pregunta. |
 | `cuenta` | Lo que se le cobra a una atención. Se abre sola al entrar el turno en atención. |
 | `cuenta_linea` | El detalle: la tarifa del servicio y cada medicamento despachado, al precio del catálogo. |
@@ -483,13 +533,17 @@ erDiagram
 
 ### Las columnas sin llave foránea
 
-Queda una sola: `lote.entrada_id`, que apunta a la tabla `entrada_inventario` del
-paso 6. Está declarada desde el paso 3 para que el módulo de inventario no haya
-que tocarlo cuando lleguen las compras — la misma razón por la que
-`chasquipet.md` §3 pide modelar las citas sin implementarlas. Su `REFERENCES` se
-añadirá con `ALTER TABLE`, igual que hizo `060_cobro.sql` con `turno.cuenta_id` y
+Ya no queda ninguna. La última era `lote.entrada_id`, declarada desde el paso 3
+sin `REFERENCES` para que el módulo de inventario no hubiera que tocarlo cuando
+llegaran las compras; `070_compras.sql` cerró el círculo con un `ALTER TABLE`,
+igual que hizo `060_cobro.sql` con `turno.cuenta_id` y
 `movimiento_inventario.cuenta_linea_id`, y antes `050_pacientes.sql` con
-`turno.paciente_id` y `movimiento_inventario.consulta_id`.
+`turno.paciente_id` y `movimiento_inventario.consulta_id`. El flujo de salida de
+medicamento no cambió ni una línea al conectarse.
+
+Con esa columna poblada, `trazabilidad_lote()` responde en una consulta la
+pregunta del día del retiro de producto: de qué proveedor y de qué factura vino
+un lote, y qué pacientes recibieron algo de él (§10.9).
 
 Desde el paso 4, una salida de medicamento queda atada a la visita
 (`movimiento_inventario.turno_id`), al animal y a la consulta. El flujo de salida
@@ -505,60 +559,31 @@ que vivir del lado de la línea, y su `UNIQUE` es lo que hace que reintentar la
 tarea no cobre el medicamento dos veces.
 
 `movimiento_inventario.cuenta_linea_id` existe desde el paso 3 y hoy queda en
-`NULL`. Se poblará en la venta directa de mostrador (paso 6), donde el orden se
-invierte: primero se cobra y después sale la mercancía.
+`NULL`. Está reservado para la venta directa de mostrador, donde el orden se
+invierte —primero se cobra y después sale la mercancía— y que no está en el MVP.
 
 ---
 
-## 2. Pendiente (paso 6 del plan)
+## 2. Lo que no está en la base
 
-Modelo previsto según `chasquipet.md` §9. **Todavía no existe en la base de
-datos.** `medicamento` y `lote` aparecen aquí sólo como referencia de las
-relaciones que les faltan por conectar.
+**Fuera del MVP** (`chasquipet.md` §3), modelado pero sin exponer: `cita` y
+`disponibilidad`, para que activar el agendamiento después no obligue a
+reescribir turnos.
 
-```mermaid
-erDiagram
-    entrada_inventario ||--o{ entrada_linea : "detalla"
-    entrada_inventario ||--o{ lote : "genera al confirmar"
-    proveedor ||--o{ entrada_inventario : "surte"
-    medicamento ||--o{ entrada_linea : "se compra como"
+**Sin modelar a propósito:**
 
-    proveedor {
-        uuid id PK
-        text nombre
-        text numero_documento
-        text telefono
-        boolean activo
-    }
+- **Facturación electrónica DIAN.** El MVP emite recibo interno consecutivo
+  (§7.4). Entrará como una tabla `documento_electronico` que referencie
+  `cuenta`, sin tocar nada de lo que ya está.
+- **Medicamentos de control especial.** El Fondo Nacional de Estupefacientes
+  exige un libro con formato propio; eso es un módulo aparte, no una columna
+  booleana (§3).
+- **Órdenes de compra, recepciones parciales y cuentas por pagar.** El paso 6
+  registra la factura que ya llegó, no el ciclo de compra completo (§9).
 
-    entrada_inventario {
-        uuid id PK
-        uuid proveedor_id FK
-        text tipo
-        date fecha
-        text documento_soporte
-        numeric valor_total
-        text adjunto_url
-        text estado
-    }
-
-    entrada_linea {
-        uuid id PK
-        uuid entrada_id FK
-        uuid medicamento_id FK
-        text numero_lote
-        date fecha_vencimiento
-        numeric cantidad
-        numeric costo_unitario
-    }
-
-```
-
-| Entidad | Para qué servirá | Paso |
-|---|---|---|
-| `proveedor` / `entrada_inventario` / `entrada_linea` | Compras que ingresan mercancía. | 6 |
-
----
+**Pendiente de implementar, sin tablas nuevas:** los pasos 7 (portal
+administrativo y reportes) y 8 (jobs, backup y documentación de operación)
+trabajan sobre el esquema que ya existe.
 
 ## 3. Decisiones del modelo
 
@@ -605,15 +630,17 @@ pedir nada haría que las mermas por vencimiento no tuvieran explicación.
 
 **El bot se extiende por enganches, no reescribiendo el enrutador.**
 `bot_manejar_update()` vive en `040_bot_turnos.sql` porque turnos fue el primer
-módulo, pero inventario, historia clínica y cobro también necesitan botones en el
-menú y sus propios callbacks. En vez de copiar el enrutador entero en cada
-migración —que es como acaban desincronizándose— ese archivo declara tres
-funciones vacías (`bot_menu_extra`, `bot_modulo_callback`, `bot_modulo_texto`) que
-las migraciones siguientes reemplazan.
+módulo, pero inventario, historia clínica, cobro y compras también necesitan
+botones en el menú y sus propios callbacks. En vez de copiar el enrutador entero
+en cada migración —que es como acaban desincronizándose— ese archivo declara
+cuatro funciones vacías (`bot_menu_extra`, `bot_modulo_callback`,
+`bot_modulo_texto` y `bot_modulo_media`) que las migraciones siguientes
+reemplazan.
 
 Cada módulo escribe las suyas con su propio prefijo (`bot_inv_*`, `bot_cli_*`,
-`bot_auth_*`) y devuelve `NULL` cuando lo que llegó no es suyo. Las tres
-funciones de enganche quedan reducidas a un despachador de cinco líneas que las
+`bot_cob_*`, `bot_com_*`, `bot_auth_*`) y devuelve `NULL` cuando lo que llegó no
+es suyo. Las funciones de enganche quedan reducidas a un despachador de cinco
+líneas que las
 encadena con `COALESCE`, y que la migración de cada módulo nuevo vuelve a
 escribir añadiéndose al final. Así, agregar el módulo clínico no obligó a tocar
 una sola línea del flujo de salida de medicamento.
@@ -679,6 +706,43 @@ exacto: cuadrar es sumar las filas de esa caja, no adivinar qué pagos caían de
 del rango de horas. Si no hay caja abierta cuando entra el primer pago, se abre
 sola con base cero: que el auxiliar no pueda cobrar porque nadie declaró la base
 sería una traba inventada.
+
+**Una compra no existe para el inventario hasta que se confirma.**
+`entrada_inventario` nace en `borrador` y en ese estado no ha creado ni un lote
+ni un movimiento: es papel. Quien digita una factura de doce renglones necesita
+poder equivocarse, borrar y volver, y hacerlo sobre existencias reales obligaría
+a corregir con ajustes lo que en realidad nunca entró. Al confirmar,
+`confirmar_entrada()` crea los lotes **a través de `ingresar_lote()`**, la misma
+función que usa cualquier otro ingreso: no hay un segundo camino para meter
+existencia, porque si lo hubiera el stock derivado y el caché acabarían
+discrepando por alguno de los dos.
+
+La confirmación es todo o nada. Si un renglón falla —un vencimiento que ya pasó,
+por ejemplo— la transacción entera se va atrás y el borrador queda intacto y
+corregible. Media factura ingresada es peor que ninguna: nadie sabría cuál mitad.
+
+**El borrador vive en la base, no en la conversación.**
+Desde el primer renglón la entrada está en `entrada_inventario`, no acumulada en
+`conversacion_estado`. Si el celular se apaga o n8n se reinicia en el renglón
+nueve, al volver el bot ofrece seguir donde iba —y el botón del menú lo dice:
+«Entrada (sin terminar)». Lo único que vive en el estado conversacional es el
+renglón a medio armar, que es lo único que se puede perder sin dolor.
+
+**Lo confirmado no se edita, ni siquiera sus renglones.**
+Un trigger (`entrada_exigir_borrador`) impide insertar o borrar líneas de una
+entrada que ya no está en borrador. Editar la factura después de que generó
+lotes y movimientos la dejaría diciendo una cosa y el inventario otra; la
+corrección es un ajuste de inventario, con su motivo y su responsable, igual que
+en todo el resto del sistema.
+
+**La foto de la factura es un mensaje más, no un paso del flujo.**
+Se manda al chat y el bot la engancha al borrador abierto; si trae pie de foto,
+lo toma como número de factura. Obligar a pulsar «adjuntar» antes de tomar la
+foto es un paso que la gente se salta. Se guarda el `file_id` de Telegram —la
+imagen se queda en sus servidores— y `adjunto_url` queda para cuando la carga
+venga del portal. Para que esto no obligara a reescribir `bot_manejar_update()`,
+`040_bot_turnos.sql` ganó un cuarto enganche, `bot_modulo_media`, con el mismo
+contrato que los otros tres.
 
 **El recibo es interno y el sistema lo dice en voz alta.**
 `recibo_numero` es un consecutivo por sede, asignado al cerrar con el mismo

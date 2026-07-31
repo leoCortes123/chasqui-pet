@@ -71,6 +71,14 @@ CREATE OR REPLACE FUNCTION bot_modulo_texto(
   p_usuario_id uuid, p_chat_id bigint, p_texto text, p_sede_id uuid)
 RETURNS jsonb LANGUAGE sql AS $$ SELECT NULL::jsonb; $$;
 
+-- Un tercer enganche para lo que no es texto ni botón: la foto de la
+-- factura que se adjunta a una entrada de inventario (§9). Recibe el
+-- `message` completo porque cada módulo sabe qué mirar dentro —photo,
+-- document— y el enrutador no tiene por qué saberlo.
+CREATE OR REPLACE FUNCTION bot_modulo_media(
+  p_usuario_id uuid, p_chat_id bigint, p_mensaje jsonb, p_sede_id uuid)
+RETURNS jsonb LANGUAGE sql AS $$ SELECT NULL::jsonb; $$;
+
 -- /ayuda se atiende antes que los módulos —es un comando del enrutador—,
 -- así que su texto también es un enganche: cada módulo nuevo reescribe
 -- esta función añadiendo sus comandos, en vez de que la lista se quede
@@ -355,6 +363,17 @@ BEGIN
     IF v_texto_in = '/ayuda' THEN
       RETURN jsonb_build_object('acciones', jsonb_build_array(
         accion_enviar(v_chat_id, bot_texto_ayuda(v_usuario))));
+    END IF;
+
+    -- Una foto o un archivo: sólo tiene sentido dentro de un flujo que lo
+    -- esté esperando. Se pregunta antes que nada más para que el mensaje
+    -- no acabe tratado como texto suelto —que limpiaría el estado y le
+    -- borraría al auxiliar la factura a medio digitar—.
+    IF p_update->'message' ? 'photo' OR p_update->'message' ? 'document' THEN
+      v_r := bot_modulo_media(v_usuario, v_chat_id, p_update->'message', v_sede);
+      RETURN jsonb_build_object('acciones',
+        COALESCE(v_r->'acciones', jsonb_build_array(accion_enviar(v_chat_id,
+          'Recibí el archivo, pero no hay nada esperándolo. Empieza por el menú con /menu.'))));
     END IF;
 
     -- Si hay un flujo en curso (§2.2.1), el texto es su respuesta: el
