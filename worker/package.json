@@ -13,6 +13,7 @@
     "check": "node --check src/index.js"
   },
   "dependencies": {
+    "openai": "^7.4.0",
     "pg": "^8.13.1"
   }
 }

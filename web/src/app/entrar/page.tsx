@@ -21,16 +21,21 @@ export const metadata: Metadata = {
 export default async function PaginaEntrar({
   searchParams,
 }: {
-  searchParams: Promise<{ volver?: string }>;
+  searchParams: Promise<{ volver?: string; enlace?: string }>;
 }) {
-  const { volver } = await searchParams;
+  const { volver, enlace } = await searchParams;
 
   // Ya con sesión: no tiene sentido pedir otro código.
   if (await sesionActual()) {
     redirect(destinoSeguro(volver));
   }
 
-  return <Ingreso volver={destinoSeguro(volver)} />;
+  return (
+    <Ingreso
+      volver={destinoSeguro(volver)}
+      enlace={enlace === 'vencido' || enlace === 'invalido' ? enlace : undefined}
+    />
+  );
 }
 
 /**

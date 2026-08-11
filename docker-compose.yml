@@ -156,6 +156,14 @@ services:
       WEB_PUBLIC_URL: ${WEB_PUBLIC_URL}
       WORKER_INTERVALO_MS: ${WORKER_INTERVALO_MS}
       WORKER_LOTE: ${WORKER_LOTE}
+      # «Habla con Chasqui» (§ 078_chasqui_ia.sql). El worker es el único
+      # contenedor que la necesita: n8n y la web nunca llaman al modelo.
+      # Sin ella el asistente avisa que no está configurado y el resto del
+      # bot sigue funcionando igual.
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      # Sólo se toca para apuntar a otro servidor compatible con la API de
+      # OpenAI. Vacío = api.deepseek.com.
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-}
     networks:
       - chasquipet
 
@@ -225,28 +233,86 @@ services:
       - chasquipet
 
   # ---------------------------------------------------------------------------
-  # cloudflared — túnel HTTPS para el webhook de Telegram
+  # Proxy — la única puerta que da a internet
+  #
+  # Un solo hostname público para las dos cosas que tienen que salir: el
+  # webhook de Telegram (a n8n) y el portal con la pantalla (a web). Que el
+  # enlace de ingreso del bot y el webhook compartan dominio no es estética:
+  # es lo que permite que el portal se abra desde afuera sin abrirle también
+  # el editor de n8n, que este proxy no enruta.
+  # ---------------------------------------------------------------------------
+  proxy:
+    image: caddy:2-alpine
+    container_name: chasquipet-proxy
+    restart: unless-stopped
+    depends_on:
+      - web
+      - n8n
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    ports:
+      # Sólo local: hacia afuera se sale por el túnel, no por este puerto.
+      - "127.0.0.1:${PUERTO_PROXY:-8081}:80"
+    networks:
+      - chasquipet
+
+  # ---------------------------------------------------------------------------
+  # cloudflared — túnel HTTPS público
   #
   # Telegram sólo entrega webhooks a direcciones HTTPS, y una máquina de la
-  # clínica no tiene uno. Este túnel publica ÚNICAMENTE n8n, que es lo que
-  # Telegram necesita alcanzar; la base, el portal y la pantalla siguen sin
-  # salir de la red local.
+  # clínica no tiene una. El túnel publica el PROXY, no n8n: así la misma
+  # dirección sirve el webhook y el portal, y el enlace de ingreso que manda
+  # el bot funciona desde cualquier parte, no sólo desde la red de la clínica.
+  # La base de datos no sale nunca.
   #
   # No arranca solo: vive en el perfil "local" porque en un despliegue con
   # dominio propio sobra. Se levanta con
-  #     docker compose --profile local up -d cloudflared
-  # y la URL https que imprime en su log va en WEBHOOK_URL dentro de .env.
-  # Un túnel rápido de Cloudflare cambia de dirección en cada arranque, así
-  # que después de levantarlo hay que volver a correr configurar-bot.sh.
+  #     docker compose --profile local up -d
+  # Un túnel rápido de Cloudflare cambia de dirección en cada arranque; de eso
+  # se encarga el registrador, no una persona.
   # ---------------------------------------------------------------------------
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: chasquipet-cloudflared
     restart: unless-stopped
     profiles: ["local"]
-    command: tunnel --no-autoupdate --url http://n8n:5678
+    # --metrics expone /quicktunnel, que es de donde el registrador lee el
+    # hostname del momento. Sin eso habría que ir a leerlo del log a mano.
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 --url http://proxy:80
     depends_on:
-      - n8n
+      - proxy
+    networks:
+      - chasquipet
+
+  # ---------------------------------------------------------------------------
+  # Registrador — mantiene el webhook y el enlace del portal apuntando al túnel
+  # ---------------------------------------------------------------------------
+  registrador:
+    image: alpine:3.20
+    container_name: chasquipet-registrador
+    restart: unless-stopped
+    profiles: ["local"]
+    depends_on:
+      cloudflared:
+        condition: service_started
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_WEBHOOK_PATH: chasquipet-telegram
+      # Vacía = descubrir el túnel. Con dominio propio se fija y el
+      # registrador deja de adivinar.
+      WEBHOOK_URL: ${WEBHOOK_URL_FIJA:-}
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    entrypoint: ["/bin/sh", "/scripts/registrar-publico.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
     networks:
       - chasquipet
 
@@ -255,6 +321,8 @@ volumes:
     name: chasquipet_pgdata
   n8ndata:
     name: chasquipet_n8ndata
+  caddydata:
+    name: chasquipet_caddydata
 
 networks:
   chasquipet:

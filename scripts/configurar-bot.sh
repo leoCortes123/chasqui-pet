@@ -18,6 +18,21 @@ fi
 set -a; . ./.env; set +a
 
 : "${TELEGRAM_BOT_TOKEN:?Falta TELEGRAM_BOT_TOKEN en .env}"
+
+# La URL pública la manda el registrador, que es el único que sabe cómo se llama
+# el túnel hoy y la deja escrita en config.portal_url. Este script la lee de ahí
+# y sólo cae en WEBHOOK_URL del .env si la base no está arriba: con el túnel
+# levantado, re-registrar desde un .env viejo dejaría el bot apuntando a una
+# dirección muerta hasta el siguiente reinicio del túnel.
+publica=$(docker compose exec -T db psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -tAc \
+          "SELECT valor FROM config WHERE clave = 'portal_url'" 2>/dev/null \
+          | tr -d '[:space:]' || true)
+
+case "$publica" in
+  https://*) WEBHOOK_URL="$publica" ;;
+  *)         publica='' ;;
+esac
+
 : "${WEBHOOK_URL:?Falta WEBHOOK_URL en .env}"
 
 API="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}"
@@ -60,15 +75,25 @@ curl -sS -X POST "${API}/setMyCommands" \
   -H 'Content-Type: application/json' \
   -d '{"commands":[
         {"command":"menu","description":"Menú principal"},
+        {"command":"chasqui","description":"Hablar con Chasqui en lenguaje natural"},
         {"command":"cola","description":"Pacientes en espera"},
         {"command":"stock","description":"Existencias y alertas de inventario"},
         {"command":"entrada","description":"Registrar una compra que llegó"},
         {"command":"proveedores","description":"Proveedores y última compra"},
         {"command":"cobrar","description":"Cuentas abiertas por cobrar"},
         {"command":"caja","description":"Estado de la caja del día"},
+        {"command":"portal","description":"Enlace para entrar al portal"},
         {"command":"sesiones","description":"Sesiones abiertas en el portal"},
         {"command":"ayuda","description":"Ayuda"}
       ]}' | sed 's/^/    /'
+echo
+
+# La descripción es lo que Telegram muestra en la pantalla previa a /start
+# ("¿Qué puede hacer este bot?"). Se deja vacía: este bot no se explica a
+# desconocidos, sólo responde a personal aprovisionado.
+echo "==> Limpiando la descripción pública del bot"
+curl -sS -X POST "${API}/setMyDescription" -d "description=" | sed 's/^/    /'
+curl -sS -X POST "${API}/setMyShortDescription" -d "short_description=" | sed 's/^/    /'
 echo
 
 echo "==> Enlace para el código QR de la entrada"
@@ -79,7 +104,13 @@ if [ -n "$sede" ]; then
   echo "    https://t.me/${usuario_bot}?start=turno-${sede}"
   echo
   echo "    Imprima ese enlace como código QR y péguelo en la entrada."
-  echo "    Pantalla de sala de espera: ${WEB_PUBLIC_URL:-http://localhost:3000}/pantalla/${sede}"
+  echo "    Pantalla en la clínica: ${WEB_PUBLIC_URL:-http://localhost:3100}/pantalla/${sede}"
+  if [ -n "$publica" ]; then
+    echo
+    echo "==> Dirección pública en uso (la escribió el registrador)"
+    echo "    Portal:   ${publica}/entrar"
+    echo "    Pantalla: ${publica}/pantalla/${sede}"
+  fi
 else
   echo "    No se pudo consultar la sede (¿está levantada la base?)."
   echo "    Ejecute 'docker compose up -d db' y vuelva a intentar."
