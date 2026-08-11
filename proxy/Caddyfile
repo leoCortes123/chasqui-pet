@@ -1,0 +1,34 @@
+# =====================================================================
+# Chasqui Pet — proxy público
+#
+# Un solo hostname para lo que tiene que salir a internet:
+#
+#   /webhook/*        → n8n   (Telegram entrega aquí)
+#   todo lo demás     → web   (portal y pantalla de sala de espera)
+#
+# El editor de n8n NO se enruta: quien tenga la URL del túnel no puede
+# llegar al panel donde viven las credenciales. La base tampoco sale.
+#
+# TLS lo pone cloudflared: aquí adentro es HTTP plano en el puerto 80.
+# =====================================================================
+
+:80 {
+	# Sin logs de acceso ruidosos, pero los errores sí se ven.
+	log {
+		output stdout
+		level ERROR
+	}
+
+	handle /webhook/* {
+		reverse_proxy n8n:5678
+	}
+
+	# n8n usa esta ruta cuando un workflow está en modo prueba desde el editor.
+	handle /webhook-test/* {
+		reverse_proxy n8n:5678
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

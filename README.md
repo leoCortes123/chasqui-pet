@@ -43,6 +43,9 @@ Chasqui.
   paciente en línea de tiempo.
 - Ingreso al portal con el Telegram del personal: código de seis dígitos,
   confirmación en el bot y aviso al usuario cada vez que se abre una sesión.
+- Ingreso también al revés, desde el chat: el botón «Entrar al portal» del menú
+  devuelve un enlace de un solo uso, válido cinco minutos, que abre el portal ya
+  autenticado sin teclear el código.
 - Resumen de la consulta al dueño por Telegram al firmarla, sólo si dio su
   consentimiento (Ley 1581 de 2012), con mecanismo de supresión de sus datos.
 - La cuenta se abre sola cuando el turno entra en atención, y cada medicamento
@@ -113,17 +116,35 @@ muestra un código, se confirma desde el bot con el Telegram del propio usuario 
 la sesión queda abierta 30 días. Quien no esté aprovisionado como usuario no
 entra, y el bot no le dice si el código era válido.
 
-### Telegram necesita HTTPS
+### Salir a internet
 
-Telegram sólo entrega webhooks a direcciones HTTPS, así que en una máquina local
-hace falta un túnel:
+Telegram sólo entrega webhooks a direcciones HTTPS, y el portal tiene que poder
+abrirse desde afuera de la clínica —el enlace de ingreso que manda el bot no
+sirve de nada si sólo funciona dentro de la LAN—. Ambas cosas salen por la misma
+puerta:
 
 ```bash
-cloudflared tunnel --url http://localhost:5679
+docker compose --profile local up -d
 ```
 
-Ponga la URL `https://…` que imprime en `WEBHOOK_URL` dentro de `.env`, levante
-de nuevo con `docker compose up -d` y vuelva a correr `configurar-bot.sh`.
+Eso levanta tres piezas más:
+
+- **proxy** (Caddy): `/webhook/*` va a n8n y todo lo demás al portal, bajo un
+  mismo hostname. El editor de n8n no se enruta: la URL pública no llega a él.
+- **cloudflared**: el túnel HTTPS hacia el proxy.
+- **registrador**: descubre la dirección del túnel, re-registra el webhook de
+  Telegram y la escribe en `config.portal_url`, que es de donde el bot saca el
+  enlace del portal. Un túnel rápido cambia de dirección en cada arranque y esto
+  lo absorbe solo; ya no hay que editar `.env` ni volver a correr nada.
+
+Con dominio propio se llena `WEBHOOK_URL_FIJA` en `.env` y el registrador usa esa
+dirección tal cual, sin adivinar.
+
+Para ver la dirección pública del momento:
+
+```bash
+docker compose logs registrador --tail 5
+```
 
 ### Puertos
 
@@ -133,6 +154,7 @@ puertos están corridos. Se cambian en `.env`.
 | Servicio | Puerto | Alcance |
 |---|---|---|
 | Pantalla y portal | 3100 | Toda la red local |
+| Proxy público | 8081 | Sólo esta máquina (afuera se sale por el túnel) |
 | n8n | 5679 | Sólo esta máquina |
 | PostgreSQL | 5433 | Sólo esta máquina |
 

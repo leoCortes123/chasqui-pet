@@ -261,6 +261,23 @@ confirma en el bot y entra. Cada vez que se abre una sesión, le llega un aviso 
 su Telegram: si le llega uno que usted no pidió, presione **No fui yo** y esa
 sesión queda cerrada.
 
+**Desde el chat, sin teclear el código.** En el menú del bot está
+**🖥️ Entrar al portal** (o escriba `/portal`): le devuelve un enlace que abre el
+portal ya adentro. Sirve **una sola vez y por cinco minutos**, y pedir uno nuevo
+anula el anterior. Si lo abre en el celular, entra en el celular; para entrar en
+el computador de la clínica, cópielo allá. Ese enlace es su llave: quien lo abra
+entra con su usuario, así que no se reenvía a nadie.
+
+Ese enlace funciona **desde cualquier parte**, no sólo dentro de la clínica: el
+portal sale a internet por el túnel, con la misma dirección por la que entra el
+bot. Así se puede revisar la caja o una historia desde la casa.
+
+La dirección que el bot pone en el enlace la mantiene el sistema solo (el
+servicio `registrador` la escribe en **Administración → Configuración →
+`portal_url`** cada vez que cambia). Sólo hay que tocarla a mano si se decide
+operar sin túnel, dentro de la red: ahí va la IP del servidor
+(`http://192.168.x.x:3100`).
+
 Qué hay ahí que no esté en el chat:
 
 - **Panel:** la cola en vivo, la caja del día y lo que está bajo mínimo.
@@ -283,7 +300,56 @@ Qué hay ahí que no esté en el chat:
 
 ---
 
-## 9. Cuando algo sale mal
+## 9. Hablar con Chasqui
+
+Los botones son el camino corto para lo que se hace todos los días. Cuando lo
+que necesita no cabe en un botón —o no sabe en cuál está— escriba `/chasqui` o
+toque **💬 Habla con Chasqui** en el menú, y pregunte como le preguntaría a un
+compañero.
+
+> — ¿cómo va la cola?
+> — Hay 4 esperando. El más antiguo lleva 22 minutos y hay una urgencia, T-014.
+
+> — ¿nos queda amoxicilina?
+> — Sí, 288 tabletas. El lote que debe salir primero vence el 25 de agosto.
+
+> — ¿qué falta por cobrar hoy?
+> — Dos cuentas: la de Bruno por $41.200 y la de Kira por $28.000.
+
+Consulta los datos reales, los del momento. No inventa cifras: si no encuentra
+algo, se lo dice.
+
+**También sirve para preguntas del negocio**, no solo del día: qué servicios se
+atienden, cuánto vale una consulta, cómo está configurado algo, cómo se hace un
+trámite en el bot.
+
+### Cuando le pide que haga algo
+
+Puede pedirle que llame al siguiente turno, saque un medicamento o registre un
+pago. **Chasqui no lo hace solo.** Le muestra primero, con los datos concretos,
+qué va a pasar:
+
+> 💊 **Salida de inventario**
+> Amoxicilina 500 mg · Lote DEMO-A24 · vence 28/03/2027
+> Sale: **2 tabletas**
+> Hay 30 → quedarían **28**
+> ¿Lo hago? [✅ Sí, hazlo] [✖️ No]
+
+Lo lee, y usted decide. La regla 3 del final de esta guía también aplica aquí, y
+por el mismo motivo: nadie —ni una persona apurada ni el asistente— cambia el
+inventario o la caja sin ese toque de más. Si pasan más de 10 minutos, la
+propuesta caduca y hay que pedirla otra vez, porque los datos ya pudieron
+cambiar.
+
+**Solo puede hacer lo que usted puede hacer.** Si su cargo no cobra, pedirle que
+cobre no lo va a lograr: se lo dice y le ofrece otra cosa.
+
+Con **🧹 Olvidar lo hablado** empieza la conversación de cero. Con `/menu`
+vuelve a los botones de siempre.
+
+---
+
+## 10. Cuando algo sale mal
 
 **El bot no contesta.**
 Espere unos segundos y vuelva a escribir `/menu`. Si sigue mudo, avísele al
@@ -313,7 +379,7 @@ Tareas*.
 
 ---
 
-## 10. Tres reglas que el sistema no deja saltarse
+## 11. Tres reglas que el sistema no deja saltarse
 
 Están puestas a propósito. Si alguna le estorba, hable con el administrador; no
 busque la vuelta.

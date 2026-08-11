@@ -16,7 +16,7 @@ interface Challenge {
 
 type Estado = 'pidiendo' | 'esperando' | 'entrando' | 'rechazado' | 'expirado' | 'error';
 
-export default function Ingreso({ volver }: { volver: string }) {
+export default function Ingreso({ volver, enlace }: { volver: string; enlace?: string }) {
   const router = useRouter();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [estado, setEstado] = useState<Estado>('pidiendo');
@@ -102,6 +102,15 @@ export default function Ingreso({ volver }: { volver: string }) {
       <section className={estilos.tarjeta}>
         <h1 className={estilos.titulo}>Chasqui Pet</h1>
         <p className={estilos.subtitulo}>Portal de la clínica</p>
+
+        {/* Llegó por el enlace del bot y ya no servía: se sigue por el código. */}
+        {enlace && (
+          <p className={estilos.aviso}>
+            {enlace === 'vencido'
+              ? 'Ese enlace ya se usó o venció. Entra con el código.'
+              : 'Ese enlace no es válido. Entra con el código.'}
+          </p>
+        )}
 
         {estado === 'pidiendo' && <p className={estilos.nota}>Generando el código…</p>}
 
