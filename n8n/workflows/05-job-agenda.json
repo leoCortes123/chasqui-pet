@@ -63,6 +63,27 @@
           "name": "Chasqui Pet Postgres"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Controles anotados por el veterinario que se acercan y NO tienen cita\n-- agendada: se le avisa al dueño para que llame a pedirla. Si el control\n-- ya está agendado, este nodo se calla: de recordarlo se encarga el\n-- primer nodo, y dos mensajes por lo mismo es peor que ninguno.\n--\n-- La anticipación sale de config ('control_aviso_dias_antes'), no de\n-- aquí. La reja de idempotencia es aviso_control_enviado.\nSELECT controles_avisar() AS resultado;",
+        "options": {}
+      },
+      "id": "sql-controles",
+      "name": "Avisar controles próximos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
     }
   ],
   "connections": {
@@ -82,6 +103,17 @@
         [
           {
             "node": "Marcar inasistencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar inasistencias": {
+      "main": [
+        [
+          {
+            "node": "Avisar controles próximos",
             "type": "main",
             "index": 0
           }

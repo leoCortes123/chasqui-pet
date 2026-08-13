@@ -94,6 +94,32 @@ export async function cancelarCita(
   return fila?.r ?? FALLO;
 }
 
+/**
+ * Agenda el control anotado en una consulta (Fase B2). No decide la hora:
+ * `agendar_control` propone el primer cupo libre de ese día, o la hora por
+ * defecto si ese día no tiene franja declarada.
+ */
+export async function agendarControl(
+  _previo: Resultado | null,
+  datos: FormData,
+): Promise<Resultado> {
+  const sesion = await exigirPermiso('agenda.gestionar', '/agenda');
+  const consulta = texto(datos, 'consulta_id');
+  if (!consulta) return FALLO;
+
+  const fila = await consultarUna<{ r: Resultado }>(
+    "SELECT agendar_control($1, $2, $3::jsonb, 'web') AS r",
+    [
+      sesion.usuario_id,
+      consulta,
+      JSON.stringify({ fecha: texto(datos, 'fecha'), hora: texto(datos, 'hora') }),
+    ],
+  );
+
+  revalidatePath('/agenda');
+  return fila?.r ?? FALLO;
+}
+
 export async function reprogramarCita(
   _previo: Resultado | null,
   datos: FormData,
