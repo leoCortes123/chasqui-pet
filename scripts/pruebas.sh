@@ -122,8 +122,27 @@ for archivo in db/pruebas/[0-9]*.sql; do
   salida="$(psql_pruebas -Atq < "$archivo" 2>&1)"
   malos="$(printf '%s\n' "$salida" | grep -c '^not ok' || true)"
   buenos="$(printf '%s\n' "$salida" | grep -c '^ok ' || true)"
+  corridas=$((buenos + malos))
 
-  if [ "$malos" -eq 0 ] && [ "$buenos" -gt 0 ]; then
+  # El plan declarado: `SELECT plan(n)` imprime «1..n».
+  #
+  # Por qué se comprueba aquí: pgTAP reporta el desajuste entre el plan y
+  # lo que corrió como un COMENTARIO («# Looks like you planned 15 tests
+  # but ran 17»), no como un «not ok». Contando solo las líneas de
+  # resultado, un archivo que declara 15 y corre 17 pasaba por verde. El
+  # caso contrario es peor: declarar de más significa que faltaron
+  # pruebas por correr —una consulta que no devolvió filas, un archivo
+  # cortado a la mitad— y ese es exactamente el fallo que un plan sirve
+  # para atrapar.
+  plan="$(printf '%s\n' "$salida" | sed -n 's/^1\.\.\([0-9][0-9]*\)$/\1/p' | head -n 1)"
+  descuadre=""
+  if [ -z "$plan" ]; then
+    descuadre="no declaró plan: agregue SELECT plan(n) al inicio del archivo."
+  elif [ "$plan" -ne "$corridas" ]; then
+    descuadre="declaró plan(${plan}) y corrió ${corridas} prueba(s): ajuste el plan."
+  fi
+
+  if [ "$malos" -eq 0 ] && [ "$buenos" -gt 0 ] && [ -z "$descuadre" ]; then
     printf '  %-32s %s pruebas ✔\n' "$nombre" "$buenos"
   else
     fallos=$((fallos + malos))
@@ -131,6 +150,10 @@ for archivo in db/pruebas/[0-9]*.sql; do
     printf '%s\n' "$salida" | grep -vE '^ok |^1\.\.' | sed 's/^/      /'
     # Sin ninguna prueba corrida, algo se rompió antes de empezar.
     if [ "$buenos" -eq 0 ]; then fallos=$((fallos + 1)); fi
+    if [ -n "$descuadre" ]; then
+      printf '      %s\n' "$descuadre"
+      fallos=$((fallos + 1))
+    fi
   fi
 done
 
