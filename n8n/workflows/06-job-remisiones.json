@@ -1,0 +1,67 @@
+{
+  "id": "chasquipetRemis",
+  "name": "Chasqui Pet — Remisiones diarias",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-remisiones",
+      "name": "Cada día 8:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Encola la alerta de remisiones vencidas (Fase B3). A las 8 de la\n-- mañana, que es cuando la clínica abre y puede llamar al laboratorio.\n--\n-- La clave de unicidad es la fecha operativa: si el job corre dos veces\n-- (reinicio, reimportación) la alerta sale una sola vez al día.\n-- El worker decide si hay algo que decir; si no hay ninguna vencida, no\n-- envía nada.\nSELECT encolar_tarea(\n         'alertas_remisiones',\n         '{}'::jsonb,\n         3,\n         'alertas_rem_' || hoy_bogota()::text\n       ) AS tarea_id;",
+        "options": {}
+      },
+      "id": "sql-alerta-remisiones",
+      "name": "Encolar alerta de remisiones",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada día 8:00": {
+      "main": [
+        [
+          {
+            "node": "Encolar alerta de remisiones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "active": true
+}

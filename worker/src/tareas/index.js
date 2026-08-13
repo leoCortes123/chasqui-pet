@@ -18,6 +18,7 @@ import * as notificarSuperadmin from './notificar_superadmin.js';
 import * as recordarLlamadoVencido from './recordar_llamado_vencido.js';
 import * as abrirCuentaTurno from './abrir_cuenta_turno.js';
 import * as alertasInventario from './alertas_inventario.js';
+import * as alertasRemisiones from './alertas_remisiones.js';
 import * as agregarLineaCuenta from './agregar_linea_cuenta.js';
 import * as enviarResumenConsulta from './enviar_resumen_consulta.js';
 import * as enviarRecibo from './enviar_recibo.js';
@@ -32,6 +33,7 @@ const MODULOS = [
   recordarLlamadoVencido,
   abrirCuentaTurno,
   alertasInventario,
+  alertasRemisiones,
   agregarLineaCuenta,
   enviarResumenConsulta,
   enviarRecibo,
