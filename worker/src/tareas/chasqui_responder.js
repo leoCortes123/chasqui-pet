@@ -19,7 +19,9 @@
 // El punto 3 es el que sostiene «las acciones las confirma la persona»: en
 // cuanto una herramienta devuelve `requiere_confirmacion`, se abandona el
 // turno del modelo. Lo que dijera después daría igual, porque no va a
-// ejecutarse nada hasta que alguien toque el botón.
+// ejecutarse nada hasta que alguien toque el botón. Las llamadas que el
+// modelo hubiera pedido en el mismo lote ya no se ejecutan: se les responde
+// que hay algo esperando confirmación (ver el bucle de herramientas).
 //
 // Sobre el cliente: DeepSeek expone una API compatible con la de OpenAI, así
 // que se usa el SDK de OpenAI apuntado a su servidor. Es el camino que la
@@ -254,6 +256,30 @@ export async function manejar({ payload }, { db, log }) {
         continue;
       }
 
+      // Ya hay una propuesta esperando confirmación en este turno: la
+      // llamada NO llega a `ia_llamar`. Si llegara y fuera una escritura,
+      // dejaría otra fila en `ia_accion_pendiente` de la que nadie va a
+      // saber nunca, porque el bot muestra una sola tarjeta. Se prefiere
+      // no crear la basura a tener que purgarla después.
+      //
+      // Aun así hay que devolver un resultado por cada llamada: la API
+      // rechaza la petición entera si falta uno. Se le explica al modelo
+      // qué pasó para que no insista en la siguiente vuelta.
+      if (pendiente) {
+        log.info(`chat ${chatId} · herramienta ${nombre} → omitida (hay una propuesta sin confirmar)`);
+        mensajes.push({
+          role: 'tool',
+          tool_call_id: llamada.id,
+          content: JSON.stringify({
+            ok: false,
+            error:
+              'Ya hay una acción esperando la confirmación de la persona. No propongas ' +
+              'nada más ni la repitas: cuando confirme o cancele, seguimos.',
+          }),
+        });
+        continue;
+      }
+
       let datos;
       try {
         const r = await db.query('SELECT ia_llamar($1, $2, $3, $4, $5) AS r', [
@@ -275,7 +301,7 @@ export async function manejar({ payload }, { db, log }) {
           (datos?.requiere_confirmacion ? 'propuesta' : datos?.ok ? 'ok' : 'error'),
       );
 
-      if (datos?.requiere_confirmacion && !pendiente) {
+      if (datos?.requiere_confirmacion) {
         pendiente = { ...datos, herramienta: nombre };
       }
 
