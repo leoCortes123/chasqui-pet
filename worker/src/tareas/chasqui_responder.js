@@ -8,20 +8,28 @@
 // cuesta una consulta, ni quién puede cobrar. Solo sabe tres cosas:
 //
 //   1. pedirle a la base el catálogo de herramientas y el historial,
-//   2. reenviar cada llamada de herramienta a `ia_llamar`,
-//   3. parar en seco cuando `ia_llamar` responde que algo necesita
-//      confirmación, y mostrar la tarjeta que armó la base.
+//   2. reenviar cada llamada de herramienta a `ia_llamar_plan`,
+//   3. al final del turno, pedirle a la base la tarjeta que corresponda y
+//      mandarla.
 //
 // Todo el criterio —qué se puede hacer, con qué permisos, qué texto ve el
-// usuario— vive en 078_chasqui_ia.sql. Si mañana hay que agregar una
-// herramienta, se agrega allá y aquí no se toca nada.
+// usuario— vive en 078_chasqui_ia.sql y 200_plan_multitarea.sql. Si mañana
+// hay que agregar una herramienta, se agrega allá y aquí no se toca nada.
 //
-// El punto 3 es el que sostiene «las acciones las confirma la persona»: en
-// cuanto una herramienta devuelve `requiere_confirmacion`, se abandona el
-// turno del modelo. Lo que dijera después daría igual, porque no va a
-// ejecutarse nada hasta que alguien toque el botón. Las llamadas que el
-// modelo hubiera pedido en el mismo lote ya no se ejecutan: se les responde
-// que hay algo esperando confirmación (ver el bucle de herramientas).
+// Cómo se sostiene «las acciones las confirma la persona» (C6.9): ninguna
+// escritura se ejecuta aquí. `ia_llamar_plan` ejecuta las lecturas y ANOTA
+// las escrituras como pasos de un plan, sin tocar nada. Al terminar el
+// turno, `ia_plan_cerrar` decide qué se muestra: con un solo paso, la
+// tarjeta de confirmación de siempre; con varios, la tarjeta del plan, con
+// un botón para el bloque clínico y uno propio por cada paso que toca
+// inventario o dinero.
+//
+// Hasta la Fase B4 el bucle se abandonaba en la primera propuesta y las
+// demás llamadas del lote se descartaban, así que «registra a Rocky, ábrele
+// consulta y agéndale control» obligaba a repetir la petición pedazo por
+// pedazo. Ahora el modelo puede anotar los pasos que le pidieron —y
+// encadenarlos con «@pasoN.campo» cuando uno necesita un dato del
+// anterior—, pero sigue sin ejecutar ninguno.
 //
 // Sobre el cliente: DeepSeek expone una API compatible con la de OpenAI, así
 // que se usa el SDK de OpenAI apuntado a su servidor. Es el camino que la
@@ -96,8 +104,19 @@ function instrucciones(ctx) {
     'medicamento, cobrar): tú no las ejecutas. Al usarlas, el sistema le',
     'muestra al usuario un resumen con un botón de confirmar, y solo él',
     'decide. Así que úsalas cuando te lo pidan, sin pedir permiso antes por',
-    'chat: el botón ES el permiso. Después de invocarla no digas nada más,',
-    'el sistema se encarga de mostrarla.',
+    'chat: el botón ES el permiso. Después de invocarlas no digas nada más,',
+    'el sistema se encarga de mostrarlas.',
+    '',
+    'Si en un mismo mensaje te piden VARIAS acciones («registra a Rocky,',
+    'ábrele consulta y agéndale control en 10 días»), invócalas todas en el',
+    'orden en que hay que hacerlas. Cada una queda anotada como un paso del',
+    'plan y la persona confirma al final; no ejecutas nada. Dos reglas:',
+    '- Anota solo los pasos que te pidieron. No agregues de tu cosecha.',
+    '- Si un paso necesita un dato que produce uno anterior (el id de la',
+    '  mascota que se acaba de crear, el de la consulta que se acaba de',
+    '  abrir), no lo inventes ni lo busques: escribe "@pasoN.campo" en ese',
+    '  argumento, por ejemplo "@paso1.paciente_id" o "@paso2.consulta_id".',
+    '  El sistema lo reemplaza por el valor real cuando le toque el turno.',
     '',
     'También respondes dudas sobre cómo funciona la clínica —servicios,',
     'horarios, cómo está configurado algo, cómo se hace un flujo en el bot—.',
@@ -202,12 +221,14 @@ export async function manejar({ payload }, { db, log }) {
     ...historial.map((m) => ({ role: m.role, content: m.content })),
   ];
 
-  let pendiente = null; // primera acción que pidió confirmación
+  // Plan de este turno. Nace en la base con la primera escritura que el
+  // modelo proponga y se queda en null si solo hubo consultas.
+  let planId = null;
   let mensajeFinal = null;
   let vueltas = 0;
   let tokens = { entrada: 0, salida: 0 };
 
-  while (vueltas < MAX_VUELTAS && !pendiente) {
+  while (vueltas < MAX_VUELTAS) {
     vueltas += 1;
 
     const respuesta = await cliente.chat.completions.create({
@@ -256,38 +277,17 @@ export async function manejar({ payload }, { db, log }) {
         continue;
       }
 
-      // Ya hay una propuesta esperando confirmación en este turno: la
-      // llamada NO llega a `ia_llamar`. Si llegara y fuera una escritura,
-      // dejaría otra fila en `ia_accion_pendiente` de la que nadie va a
-      // saber nunca, porque el bot muestra una sola tarjeta. Se prefiere
-      // no crear la basura a tener que purgarla después.
-      //
-      // Aun así hay que devolver un resultado por cada llamada: la API
-      // rechaza la petición entera si falta uno. Se le explica al modelo
-      // qué pasó para que no insista en la siguiente vuelta.
-      if (pendiente) {
-        log.info(`chat ${chatId} · herramienta ${nombre} → omitida (hay una propuesta sin confirmar)`);
-        mensajes.push({
-          role: 'tool',
-          tool_call_id: llamada.id,
-          content: JSON.stringify({
-            ok: false,
-            error:
-              'Ya hay una acción esperando la confirmación de la persona. No propongas ' +
-              'nada más ni la repitas: cuando confirme o cancele, seguimos.',
-          }),
-        });
-        continue;
-      }
-
       let datos;
       try {
-        const r = await db.query('SELECT ia_llamar($1, $2, $3, $4, $5) AS r', [
+        // Una sola puerta: las lecturas se ejecutan, las escrituras se
+        // anotan en el plan. Cuál es cuál lo decide la base, no esto.
+        const r = await db.query('SELECT ia_llamar_plan($1, $2, $3, $4, $5, $6) AS r', [
           usuarioId,
           chatId,
           sedeId,
           nombre,
           JSON.stringify(argumentos),
+          planId,
         ]);
         datos = r.rows[0].r;
       } catch (err) {
@@ -296,14 +296,14 @@ export async function manejar({ payload }, { db, log }) {
         datos = { ok: false, error: err.message };
       }
 
+      // El plan lo abre la base con la primera escritura y devuelve su id
+      // para que las siguientes del mismo turno caigan en el mismo plan.
+      if (datos?.plan_id) planId = datos.plan_id;
+
       log.info(
         `chat ${chatId} · herramienta ${nombre} → ` +
-          (datos?.requiere_confirmacion ? 'propuesta' : datos?.ok ? 'ok' : 'error'),
+          (datos?.en_plan ? `paso ${datos.paso} del plan` : datos?.ok ? 'ok' : 'error'),
       );
-
-      if (datos?.requiere_confirmacion) {
-        pendiente = { ...datos, herramienta: nombre };
-      }
 
       // Un resultado por cada llamada, sin saltarse ninguna: si falta uno,
       // la siguiente petición se rechaza entera.
@@ -320,22 +320,46 @@ export async function manejar({ payload }, { db, log }) {
   // Se ignora lo que el modelo haya escrito y se manda la tarjeta que armó
   // la base. Esto es a propósito: el texto de una confirmación tiene que
   // salir de los datos, no de la redacción del modelo.
-  if (pendiente) {
-    const { rows: t } = await db.query('SELECT bot_ia_tarjeta_confirmacion($1) AS t', [
-      pendiente.accion_id,
-    ]);
-    const tarjeta = t[0].t;
+  //
+  // `ia_plan_cerrar` es quien decide la forma: un paso deshace el plan y
+  // devuelve la tarjeta de confirmación de siempre; varios devuelven la del
+  // plan. Aquí las dos se mandan igual.
+  if (planId) {
+    const { rows: c } = await db.query('SELECT ia_plan_cerrar($1) AS r', [planId]);
+    const cierre = c[0].r;
 
-    const r = await enviarMensaje(chatId, tarjeta.texto, {
-      reply_markup: teclado(
-        (tarjeta.botones ?? []).map((fila) => fila.map((b) => ({ texto: b.t, dato: b.d }))),
-      ),
-    });
+    if (cierre?.ok) {
+      const tarjeta = cierre.tarjeta;
+      const r = await enviarMensaje(chatId, tarjeta.texto, {
+        reply_markup: teclado(
+          (tarjeta.botones ?? []).map((fila) => fila.map((b) => ({ texto: b.t, dato: b.d }))),
+        ),
+      });
 
+      return {
+        respondido: r.ok,
+        plan: cierre.pasos > 1 ? planId : undefined,
+        confirmacion: cierre.accion_id,
+        pasos: cierre.pasos,
+        vueltas,
+        tokens,
+        envio: resumenEnvio(r),
+      };
+    }
+
+    // No se pudo preparar lo propuesto (un lote que ya no existe, un dato
+    // que faltaba). La base ya limpió lo que había anotado; se dice y se
+    // completa la tarea, que reintentar contra el modelo no lo arregla.
+    log.aviso(`chat ${chatId}: plan sin tarjeta (${cierre?.motivo ?? 'desconocido'})`);
+    const r = await enviarMensaje(
+      chatId,
+      '💬 No logré dejar eso listo para confirmar' +
+        (cierre?.mensaje ? `: ${esc(cierre.mensaje)}` : '.') +
+        '\nVuelve a pedírmelo con los datos completos, o usa /menu.',
+    );
     return {
       respondido: r.ok,
-      confirmacion: pendiente.accion_id,
-      herramienta: pendiente.herramienta,
+      motivo: cierre?.motivo ?? 'plan_sin_tarjeta',
       vueltas,
       tokens,
       envio: resumenEnvio(r),
