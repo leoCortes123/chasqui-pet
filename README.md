@@ -116,6 +116,40 @@ muestra un código, se confirma desde el bot con el Telegram del propio usuario 
 la sesión queda abierta 30 días. Quien no esté aprovisionado como usuario no
 entra, y el bot no le dice si el código era válido.
 
+### Migraciones sobre una base que ya existe
+
+Las migraciones de `db/migrations/` las aplica el contenedor de Postgres **una
+sola vez**, cuando el volumen `pgdata` está vacío. En una base que ya está
+corriendo, un archivo nuevo no se aplica solo. Para eso está el migrador:
+
+```bash
+bash scripts/migrar.sh --estado   # qué está aplicado y qué falta
+bash scripts/migrar.sh            # aplica lo pendiente, en orden
+```
+
+Qué garantiza:
+
+- Cada migración se aplica **en una transacción junto con su registro**: si
+  falla a la mitad, no queda a medias ni queda anotada como aplicada.
+- Guarda el `sha256` de cada archivo. Si un archivo ya aplicado cambia, el
+  migrador se detiene: la regla del proyecto es que una migración aplicada no se
+  edita, se crea una nueva con el siguiente prefijo libre.
+- En instalación limpia no hay que hacer nada: `910_registrar_versiones.sh`
+  siembra el registro con todo lo que el arranque acaba de aplicar.
+
+La primera vez sobre una base **que ya tenía el esquema** (creada antes de que
+existiera el registro), hay que decirle qué dar por aplicado. Haga respaldo
+antes:
+
+```bash
+docker compose exec -T backup \
+  pg_dump -Fc -Z 6 --no-owner --no-privileges -f /backups/antes-de-migrar.dump
+bash scripts/migrar.sh --retro-registrar   # marca lo existente sin ejecutarlo
+```
+
+El registro se consulta con `SELECT version, nombre, origen, aplicada_at FROM
+schema_version ORDER BY version;`.
+
 ### Salir a internet
 
 Telegram sólo entrega webhooks a direcciones HTTPS, y el portal tiene que poder
@@ -161,7 +195,8 @@ puertos están corridos. Se cambian en `.env`.
 ## Estructura
 
 ```
-db/migrations/   Esquema, funciones y seeds. Se aplican solos al crear la base.
+db/migrations/   Esquema, funciones y seeds. Se aplican solos al crear la base;
+                 sobre una base ya creada, con scripts/migrar.sh.
 db/demo/         Datos de demostración.
 n8n/workflows/   Workflows del bot y de los jobs, versionados.
 worker/          Servicio que procesa la cola de tareas asíncronas.
@@ -176,6 +211,7 @@ docs/            Modelo de datos y documentación técnica.
 docker compose logs -f worker        # ver la cola de tareas trabajando
 docker compose ps                    # estado de los servicios
 bash scripts/crear-superadmin.sh     # dar acceso al primer usuario
+bash scripts/migrar.sh --estado      # qué migraciones están aplicadas
 bash scripts/restaurar.sh <archivo>  # restaurar un respaldo
 ```
 

@@ -483,7 +483,7 @@ cerrar una fase.
 | Fase | Alcance | Estado |
 |---|---|---|
 | 1 | `preparar_alta_paciente` — alta de paciente y dueño | ✅ `docs/reporte-fase1-pacientes-duenos.md` |
-| 2 | `preparar_consulta_clinica` — borrador de consulta, nunca la firma | ⚠️ Implementada en `079`, **sin reporte ni commit** → la cierra la Fase A2 de este plan |
+| 2 | `preparar_consulta_clinica` — borrador de consulta, nunca la firma | ✅ `docs/reporte-fase2-borrador-consulta.md` (cerrada por la Fase A2, 12-ago-2026) |
 | 3 | `despachar_receta_multiple` — despacho múltiple con FEFO atómico | ✅ `docs/reporte-fase3-despacho-recetas.md` |
 | 4 | `cargar_paquete_servicios`, `aplicar_descuento_asistido` | ✅ `docs/reporte-fase4-paquetes-cobros.md` |
 | 5 | `preparar_aviso_dueno` — con consentimiento Ley 1581 | ✅ `docs/reporte-fase5-avisos-duenos.md` |
