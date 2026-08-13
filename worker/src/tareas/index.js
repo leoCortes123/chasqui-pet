@@ -21,6 +21,7 @@ import * as alertasInventario from './alertas_inventario.js';
 import * as agregarLineaCuenta from './agregar_linea_cuenta.js';
 import * as enviarResumenConsulta from './enviar_resumen_consulta.js';
 import * as enviarRecibo from './enviar_recibo.js';
+import * as enviarAvisoDueno from './enviar_aviso_dueno.js';
 import * as notificarInicioSesion from './notificar_inicio_sesion.js';
 import * as chasquiResponder from './chasqui_responder.js';
 
@@ -34,6 +35,7 @@ const MODULOS = [
   agregarLineaCuenta,
   enviarResumenConsulta,
   enviarRecibo,
+  enviarAvisoDueno,
   notificarInicioSesion,
   chasquiResponder,
 ];
