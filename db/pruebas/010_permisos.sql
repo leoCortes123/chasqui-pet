@@ -14,7 +14,7 @@
 -- detrás de la puerta.
 -- =====================================================================
 BEGIN;
-SELECT plan(28);
+SELECT plan(29);
 
 CREATE TEMP TABLE actor AS SELECT prueba.don_nadie() AS id;
 CREATE TEMP TABLE ficha AS
@@ -56,6 +56,9 @@ SELECT throws_ok(format('SELECT crear_dueno(%L, ''Quien Sea'')', id), '42501', N
   'crear_dueno exige permiso') FROM actor;
 SELECT throws_ok(format('SELECT crear_paciente(%L, ''Bicho'')', id), '42501', NULL,
   'crear_paciente exige permiso') FROM actor;
+SELECT throws_ok(
+  format('SELECT alta_paciente(%L, ''{"mascota_nombre":"Bicho","dueno_nombre":"Quien Sea"}''::jsonb)', id),
+  '42501', NULL, 'alta_paciente exige permiso') FROM actor;
 SELECT throws_ok(format('SELECT registrar_consentimiento(%L, %L)', a.id, f.fantasma), '42501', NULL,
   'registrar_consentimiento exige permiso') FROM actor a, ficha f;
 SELECT throws_ok(format('SELECT abrir_consulta(%L, %L)', a.id, f.fantasma), '42501', NULL,
