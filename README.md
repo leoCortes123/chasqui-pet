@@ -150,6 +150,29 @@ bash scripts/migrar.sh --retro-registrar   # marca lo existente sin ejecutarlo
 El registro se consulta con `SELECT version, nombre, origen, aplicada_at FROM
 schema_version ORDER BY version;`.
 
+### Pruebas
+
+```bash
+bash scripts/pruebas.sh              # todas
+bash scripts/pruebas.sh 030          # solo las que empiezan por 030
+bash scripts/pruebas.sh --conservar  # deja la base en pie para mirarla con psql
+```
+
+Levanta una base **desde cero** con `db/migrations/`, en un contenedor aparte con
+pgTAP, y comprueba los invariantes que no pueden romperse: que ninguna función de
+escritura corra sin permiso, que el dinero y la auditoría no se puedan editar, el
+FEFO del inventario, que una consulta firmada no se toque, que la caja cuadre
+contra los pagos, que no salga un mensaje al dueño sin consentimiento y que
+ninguna herramienta del asistente ejecute nada sin confirmación humana.
+
+No toca la base de trabajo: usa su propio contenedor, sin puertos publicados, y lo
+destruye al terminar. Como la base se construye desde las migraciones, cada
+corrida verifica de paso que una instalación limpia sigue funcionando.
+
+Las pruebas viven en `db/pruebas/`. Para agregar una, cree un archivo
+`NNN_tema.sql` con el patrón de los existentes (`BEGIN; SELECT plan(n); … SELECT *
+FROM finish(); ROLLBACK;`); el corredor lo encuentra solo.
+
 ### Salir a internet
 
 Telegram sólo entrega webhooks a direcciones HTTPS, y el portal tiene que poder
@@ -197,6 +220,7 @@ puertos están corridos. Se cambian en `.env`.
 ```
 db/migrations/   Esquema, funciones y seeds. Se aplican solos al crear la base;
                  sobre una base ya creada, con scripts/migrar.sh.
+db/pruebas/      Batería de invariantes con pgTAP (scripts/pruebas.sh).
 db/demo/         Datos de demostración.
 n8n/workflows/   Workflows del bot y de los jobs, versionados.
 worker/          Servicio que procesa la cola de tareas asíncronas.
@@ -212,6 +236,7 @@ docker compose logs -f worker        # ver la cola de tareas trabajando
 docker compose ps                    # estado de los servicios
 bash scripts/crear-superadmin.sh     # dar acceso al primer usuario
 bash scripts/migrar.sh --estado      # qué migraciones están aplicadas
+bash scripts/pruebas.sh              # batería de invariantes del núcleo
 bash scripts/restaurar.sh <archivo>  # restaurar un respaldo
 ```
 
