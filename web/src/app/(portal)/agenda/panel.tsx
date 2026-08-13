@@ -1,10 +1,11 @@
 'use client';
 
 import { useActionState } from 'react';
-import type { Cita, Cupo, TipoServicio } from '@/lib/agenda';
+import type { Cita, ControlPendiente, Cupo, TipoServicio } from '@/lib/agenda';
 import type { ResultadoPaciente } from '@/lib/clinico';
 import {
   agendarCita,
+  agendarControl,
   cancelarCita,
   registrarLlegada,
   reprogramarCita,
@@ -110,6 +111,25 @@ export function AccionesCita({ cita }: { cita: Cita }) {
 
       <Aviso estado={llegada} />
     </div>
+  );
+}
+
+/**
+ * Un control por agendar (Fase B2). El botón agenda con la fecha que anotó
+ * el veterinario y la hora que proponga la base; para moverlo, se usa
+ * «Reprogramar» sobre la cita ya creada, que es el camino que ya existe.
+ */
+export function BotonAgendarControl({ control }: { control: ControlPendiente }) {
+  const [estado, accion, enviando] = useActionState(agendarControl, null);
+
+  return (
+    <form className={estilos.acciones} action={accion}>
+      <input type="hidden" name="consulta_id" value={control.consulta_id} />
+      <button className={estilos.botonPrimario} type="submit" disabled={enviando}>
+        {enviando ? '…' : `Agendar el ${control.fecha_control.slice(8, 10)}/${control.fecha_control.slice(5, 7)}`}
+      </button>
+      <Aviso estado={estado} />
+    </form>
   );
 }
 

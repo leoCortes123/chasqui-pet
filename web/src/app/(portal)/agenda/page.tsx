@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   agendaDelDia,
+  controlesPendientes,
   cuposDelDia,
   desplazarFecha,
   esFecha,
@@ -13,7 +14,7 @@ import {
 } from '@/lib/agenda';
 import { buscarPacientes } from '@/lib/clinico';
 import { exigirPermiso, puede } from '@/lib/sesion';
-import { AccionesCita, FormularioAgendar } from './panel';
+import { AccionesCita, BotonAgendarControl, FormularioAgendar } from './panel';
 import estilos from '../vistas.module.css';
 
 export const runtime = 'nodejs';
@@ -56,10 +57,11 @@ export default async function PaginaAgenda({
   const fecha = fechaParam && esFecha(fechaParam) ? fechaParam : hoy;
   const puedeGestionar = puede(sesion, 'agenda.gestionar');
 
-  const [agenda, cupos, tipos] = await Promise.all([
+  const [agenda, cupos, tipos, controles] = await Promise.all([
     agendaDelDia(sesion.usuario_id, sesion.sede_id, fecha),
     puedeGestionar ? cuposDelDia(sesion.usuario_id, sesion.sede_id, fecha) : null,
     puedeGestionar ? tiposDeServicio() : [],
+    controlesPendientes(sesion.usuario_id, sesion.sede_id),
   ]);
 
   const texto = (q ?? '').trim();
@@ -126,6 +128,48 @@ export default async function PaginaAgenda({
             {cerradas.map((c) => (
               <li key={c.cita_id}>
                 <FilaCita cita={c} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {controles && controles.total > 0 && (
+        <>
+          <h2 className={`${estilos.tituloSeccion} ${estilos.tituloDespues}`}>
+            Controles por agendar
+          </h2>
+          <p className={estilos.subtitulo}>
+            Revisiones que anotó el veterinario y todavía no tienen cita
+            {controles.vencidos > 0 && ` · ${controles.vencidos} ya vencida(s)`}.
+          </p>
+          <ul className={estilos.lista}>
+            {controles.controles.map((c) => (
+              <li key={c.consulta_id}>
+                <Link className={estilos.fila} href={`/consulta/${c.consulta_id}`}>
+                  <span className={estilos.emoji}>{c.vencido ? '⚠️' : '🔔'}</span>
+                  <span className={estilos.filaTexto}>
+                    <span className={estilos.filaNombre}>
+                      {c.paciente} · {fechaLarga(c.fecha_control)}
+                    </span>
+                    <span className={estilos.filaDetalle}>
+                      {[
+                        c.dueno,
+                        c.telefono,
+                        c.vencido
+                          ? `vencido hace ${-c.dias_faltan} día(s)`
+                          : `en ${c.dias_faltan} día(s)`,
+                        // Lo que no se puede avisar por Telegram hay que
+                        // llamarlo: decirlo aquí evita esperar un mensaje
+                        // que nunca va a salir (§12).
+                        c.avisable ? (c.avisado ? 'ya avisado' : null) : 'sin Telegram: llamar',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </span>
+                </Link>
+                {puedeGestionar && <BotonAgendarControl control={c} />}
               </li>
             ))}
           </ul>

@@ -89,6 +89,46 @@ export async function cuposDelDia(
   return fila?.c ?? null;
 }
 
+/** Un control anotado en una consulta y todavía sin cita (Fase B2). */
+export interface ControlPendiente {
+  consulta_id: string;
+  fecha_control: string;
+  dias_faltan: number;
+  vencido: boolean;
+  paciente_id: string;
+  paciente: string;
+  especie: string;
+  dueno_id: string | null;
+  dueno: string | null;
+  telefono: string | null;
+  /** Si se le puede escribir por Telegram: consentimiento + chat (§12). */
+  avisable: boolean;
+  avisado: boolean;
+  veterinario: string | null;
+  consulta_fecha: string;
+}
+
+export interface Controles {
+  ok: boolean;
+  sede_id: string;
+  hasta: string;
+  controles: ControlPendiente[];
+  total: number;
+  vencidos: number;
+}
+
+export async function controlesPendientes(
+  usuarioId: string,
+  sedeId: string | null,
+  dias = 15,
+): Promise<Controles | null> {
+  const fila = await consultarUna<{ c: Controles | null }>(
+    'SELECT controles_pendientes($1, $2, $3) AS c',
+    [usuarioId, sedeId, dias],
+  );
+  return fila?.c ?? null;
+}
+
 export interface TipoServicio {
   codigo: string;
   nombre: string;
