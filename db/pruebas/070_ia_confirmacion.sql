@@ -11,7 +11,7 @@
 -- prueba la cubre sola.
 -- =====================================================================
 BEGIN;
-SELECT plan(12);
+SELECT plan(15);
 
 -- --- Invariantes del catálogo ----------------------------------------
 SELECT is((SELECT count(*)::int FROM ia_herramienta WHERE escribe AND permiso IS NULL), 0,
@@ -19,14 +19,17 @@ SELECT is((SELECT count(*)::int FROM ia_herramienta WHERE escribe AND permiso IS
 SELECT isnt_empty('SELECT 1 FROM ia_herramienta WHERE escribe AND activa',
                   'hay herramientas de escritura registradas (si no, la prueba no probaría nada)');
 
--- Toda herramienta que escribe tiene que tener un ejecutor en `ia_escribir`.
--- Una registrada sin rama se propondría, se confirmaría y moriría en el ELSE.
-SELECT is((SELECT count(*)::int FROM ia_herramienta h
-            WHERE h.escribe AND h.activa
-              AND NOT EXISTS (SELECT 1 FROM pg_proc p
-                               WHERE p.proname = 'ia_escribir'
-                                 AND p.prosrc LIKE '%' || h.nombre || '%')), 0,
-          'toda herramienta de escritura tiene ejecutor en ia_escribir');
+-- El registro de operaciones (Fase A5) tiene que estar completo y sano:
+-- cada herramienta con su función, existente y con la firma uniforme.
+-- Esto es lo que reemplazó a la verificación estática que daba el CASE.
+SELECT ok((verificar_registro_operaciones()->>'ok')::boolean,
+          'verificar_registro_operaciones() no encuentra hallazgos');
+SELECT is(verificar_registro_operaciones()->'hallazgos', '[]'::jsonb,
+          'y la lista de hallazgos está vacía');
+SELECT is((SELECT count(*)::int FROM ia_herramienta WHERE activa AND funcion IS NULL), 0,
+          'ninguna herramienta activa se quedó sin operación registrada');
+SELECT is((SELECT count(*)::int FROM ia_herramienta WHERE activa AND modulo IS NULL), 0,
+          'toda herramienta activa declara su módulo');
 
 -- --- Nada se ejecuta sin confirmar -----------------------------------
 -- Se llama a todas como las llamaría el modelo. Los errores por
