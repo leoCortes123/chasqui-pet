@@ -1,3 +1,9 @@
+> **DOCUMENTO ARCHIVADO.** Superado el 12 de agosto de 2026 por `docs/plan-consolidacion-chasqui-pet.md`.
+> Corresponde a la herramienta externa StrictContext, ajena a la aplicación.
+> Se conserva como referencia histórica; no es la fuente vigente.
+
+---
+
 # Plan de incorporación de Chasqui Pet a StrictContext
 
 ## Objetivo
