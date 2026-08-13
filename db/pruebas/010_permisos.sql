@@ -14,7 +14,7 @@
 -- detrás de la puerta.
 -- =====================================================================
 BEGIN;
-SELECT plan(29);
+SELECT plan(38);
 
 CREATE TEMP TABLE actor AS SELECT prueba.don_nadie() AS id;
 CREATE TEMP TABLE ficha AS
@@ -91,6 +91,31 @@ SELECT throws_ok(format('SELECT crear_entrada(%L, %L)', a.id, f.fantasma), '4250
   'crear_entrada exige permiso') FROM actor a, ficha f;
 SELECT throws_ok(format('SELECT confirmar_entrada(%L, %L)', a.id, f.fantasma), '42501', NULL,
   'confirmar_entrada exige permiso') FROM actor a, ficha f;
+
+-- --- Agenda (Fase B1) -------------------------------------------------
+-- `agenda_del_dia` y `horarios_disponibles` son lecturas, pero también
+-- exigen permiso: la agenda de una clínica dice quién viene, con qué
+-- mascota y a qué hora.
+SELECT throws_ok(
+  format('SELECT crear_cita(%L, ''{"paciente_id":"%s","inicio":"2099-01-01 09:00"}''::jsonb)',
+         a.id, f.fantasma),
+  '42501', NULL, 'crear_cita exige permiso') FROM actor a, ficha f;
+SELECT throws_ok(format('SELECT reprogramar_cita(%L, %L, ''2099-01-01 09:00'')', a.id, f.fantasma),
+  '42501', NULL, 'reprogramar_cita exige permiso') FROM actor a, ficha f;
+SELECT throws_ok(format('SELECT cancelar_cita(%L, %L, ''x'')', a.id, f.fantasma), '42501', NULL,
+  'cancelar_cita exige permiso') FROM actor a, ficha f;
+SELECT throws_ok(format('SELECT confirmar_asistencia(%L, %L)', a.id, f.fantasma), '42501', NULL,
+  'confirmar_asistencia exige permiso') FROM actor a, ficha f;
+SELECT throws_ok(format('SELECT agenda_del_dia(%L, %L)', a.id, f.sede), '42501', NULL,
+  'agenda_del_dia exige permiso') FROM actor a, ficha f;
+SELECT throws_ok(format('SELECT horarios_disponibles(%L, %L, ''2099-01-01''::date)', a.id, f.sede),
+  '42501', NULL, 'horarios_disponibles exige permiso') FROM actor a, ficha f;
+SELECT throws_ok(format('SELECT definir_disponibilidad(%L, %L::jsonb)', a.id, '{}'), '42501', NULL,
+  'definir_disponibilidad exige permiso') FROM actor a;
+SELECT throws_ok(format('SELECT bloquear_agenda(%L, %L::jsonb)', a.id, '{}'), '42501', NULL,
+  'bloquear_agenda exige permiso') FROM actor a;
+SELECT throws_ok(format('SELECT liberar_bloqueo(%L, %L)', a.id, f.fantasma), '42501', NULL,
+  'liberar_bloqueo exige permiso') FROM actor a, ficha f;
 
 SELECT * FROM finish();
 ROLLBACK;
