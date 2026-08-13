@@ -1,0 +1,99 @@
+{
+  "id": "chasquipetAgenda",
+  "name": "Chasqui Pet — Agenda diaria",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-agenda",
+      "name": "Cada día 18:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Recordatorio de las citas de MAÑANA. Un aviso por cita: la reja es\n-- cita.recordatorio_enviado_at, que se marca en la misma sentencia que\n-- selecciona, así que dos corridas no pueden duplicar el aviso.\n--\n-- No decide nada sobre a quién se le escribe: la función filtra por\n-- consentimiento y chat vinculado (Ley 1581, §12) y el worker lo vuelve\n-- a comprobar al enviar. n8n solo dispara la hora.\nSELECT agenda_recordatorios(1) AS resultado;",
+        "options": {}
+      },
+      "id": "sql-recordatorios",
+      "name": "Recordar citas de mañana",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Cierra el día: la cita cuya hora pasó con margen y que nunca generó\n-- turno es una inasistencia. Marcarla la saca de los pendientes y deja\n-- medible cuánta gente no viene. El margen sale de config\n-- ('agenda_gracia_no_asistio_min'), no de aquí.\nSELECT agenda_marcar_no_asistio() AS resultado;",
+        "options": {}
+      },
+      "id": "sql-no-asistio",
+      "name": "Marcar inasistencias",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "chasquipet-postgres",
+          "name": "Chasqui Pet Postgres"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada día 18:00": {
+      "main": [
+        [
+          {
+            "node": "Recordar citas de mañana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recordar citas de mañana": {
+      "main": [
+        [
+          {
+            "node": "Marcar inasistencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "active": true
+}

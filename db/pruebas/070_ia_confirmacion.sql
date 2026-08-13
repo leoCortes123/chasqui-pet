@@ -11,7 +11,7 @@
 -- prueba la cubre sola.
 -- =====================================================================
 BEGIN;
-SELECT plan(15);
+SELECT plan(16);
 
 -- --- Invariantes del catálogo ----------------------------------------
 SELECT is((SELECT count(*)::int FROM ia_herramienta WHERE escribe AND permiso IS NULL), 0,
@@ -52,6 +52,7 @@ SELECT (SELECT count(*) FROM turno)                  AS turnos,
        (SELECT count(*) FROM movimiento_inventario)  AS movimientos,
        (SELECT count(*) FROM cuenta_linea)           AS lineas,
        (SELECT count(*) FROM paciente)               AS pacientes,
+       (SELECT count(*) FROM cita)                   AS citas,
        (SELECT count(*) FROM tarea_async)            AS tareas;
 
 CREATE TEMP TABLE resultados AS
@@ -75,6 +76,8 @@ SELECT is((SELECT count(*) FROM movimiento_inventario), (SELECT movimientos FROM
           'no se movió el inventario');
 SELECT is((SELECT count(*) FROM cuenta_linea),          (SELECT lineas FROM antes),
           'no se agregó ninguna línea a ninguna cuenta');
+SELECT is((SELECT count(*) FROM cita),                  (SELECT citas FROM antes),
+          'no se agendó ninguna cita');
 SELECT is((SELECT count(*) FROM tarea_async),           (SELECT tareas FROM antes),
           'no se encoló ningún envío');
 
