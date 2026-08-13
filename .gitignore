@@ -4,6 +4,13 @@
 .env.*
 !.env.example
 
+# Herramientas externas al proyecto (StrictContext, opencode). No forman parte
+# de la aplicación y opencode.json CONTIENE UNA CREDENCIAL REAL: sin estas
+# líneas, un `git add -A` la publicaba.
+opencode.json
+.strictcontext/
+.strictcontext.db
+
 # --- Dependencias -----------------------------------------------------------
 node_modules/
 .pnpm-store/
