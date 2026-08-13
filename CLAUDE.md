@@ -55,7 +55,7 @@ y la web solo traduce formularios a llamadas SQL.
 | Proxy | Caddy 2 (`caddy:2-alpine`) | `proxy/Caddyfile` |
 | Túnel público | `cloudflare/cloudflared` (perfil `local`) | `docker-compose.yml` |
 | Autenticación | Solo Telegram: challenge de 6 dígitos o enlace de un solo uso; cookie de sesión validada por SQL | `db/migrations/058_auth_web.sql`, `077_portal_enlace.sql`, `web/src/lib/sesion.ts` |
-| Testing | **No hay framework de tests automatizados en el repositorio** | ver *Testing* |
+| Testing | pgTAP sobre una base efímera levantada desde las migraciones (`db/pruebas/`, `scripts/pruebas.sh`). Nada automatizado en Node ni en la web | ver *Testing* |
 | Lint/formato | **No hay configuración de ESLint ni Prettier** | ver *Testing* |
 | Zona horaria | `America/Bogota` en todos los contenedores; `timestamptz` en UTC, presentación en hora local | Dockerfiles, `010_base.sql` (`hoy_bogota()`, `ahora_bogota()`) |
 
@@ -122,6 +122,8 @@ db/migrations/   Esquema, funciones plpgsql, permisos y seeds. Se aplican en el
                  prefijos de TRES dígitos, .sh y .sql mezclados).
 db/demo/         Datos de demostración (los carga scripts/cargar-demo.sh).
 db/seeds/        Vacío.
+db/pruebas/      Batería de invariantes con pgTAP + su Dockerfile. No son
+                 migraciones: solo se cargan en la base efímera de scripts/pruebas.sh.
 n8n/workflows/   Webhook de Telegram y 3 jobs programados, versionados en JSON.
 worker/src/      Worker de la cola: index.js (ciclo), telegram.js, log.js, tareas/.
 web/src/app/     Next.js App Router: (portal) protegido, /entrar, /pantalla,
@@ -150,14 +152,25 @@ copie, no lo imprima y no lo agregue al índice de git (ver *Git Rules*).
 
 - **Motor:** PostgreSQL 16. Base de negocio `chasquipet`; n8n usa una base
   **separada** (`n8n`) con usuario propio, creada por `db/migrations/000_n8n_db.sh`.
-- **Sin ORM ni migrador**: no hay Prisma/Drizzle/Knex ni tabla de versiones de
-  migración. Los archivos de `db/migrations/` se ejecutan **una sola vez**, cuando
-  el volumen `pgdata` está vacío.
-- **Consecuencia crítica:** en una base ya inicializada, una migración nueva
-  (p. ej. `079`–`083`) **no se aplica sola**; hay que ejecutarla a mano contra la
-  base. Por eso las migraciones recientes se escriben **idempotentes**
-  (`CREATE OR REPLACE`, `INSERT … ON CONFLICT`, `GRANT` repetibles). Mantenga esa
-  propiedad en cualquier migración nueva.
+- **Sin ORM**: no hay Prisma/Drizzle/Knex. SQL directo con `pg`.
+- **Con migrador propio desde la Fase A1**: la tabla `schema_version`
+  (`120_schema_version.sql`) registra qué se aplicó, y `scripts/migrar.sh` es el
+  **único camino previsto** para aplicar una migración a una base ya inicializada.
+  Los dos caminos convergen: en instalación limpia initdb corre `db/migrations/` y
+  `910_registrar_versiones.sh` siembra el registro; en base viva, `migrar.sh`
+  aplica y registra en la misma transacción.
+
+  ```bash
+  bash scripts/migrar.sh --estado   # qué está aplicado y qué falta
+  bash scripts/migrar.sh            # aplica lo pendiente, en orden
+  ```
+
+  El migrador **guarda el hash** de cada archivo: si una migración ya aplicada
+  cambia de contenido, se detiene con código 2 y no aplica nada. Es la regla del
+  proyecto vuelta reja —una migración aplicada no se edita— y no se rodea.
+- **Aun así, escriba las migraciones idempotentes** (`CREATE OR REPLACE`,
+  `IF NOT EXISTS`, `INSERT … ON CONFLICT`, `GRANT` repetibles): el registro dice
+  qué corrió en *esa* base, no en todas.
 - **Convenciones observadas:**
   - Nombres de tablas/columnas/funciones en español, `snake_case`, tablas en
     singular (`turno`, `cuenta`, `movimiento_inventario`).
@@ -165,6 +178,14 @@ copie, no lo imprima y no lo agregue al índice de git (ver *Git Rules*).
     contienen la capa de bot del módulo `0x0_*`.
   - Cabecera de comentario en cada archivo explicando el porqué y citando la
     sección del `chasquipet.md` (§).
+  - **Toda migración nueva declara su ámbito en la cabecera** (Fase A7a), en una
+    de estas dos formas exactas:
+    `-- Ámbito: NÚCLEO` (identidad, permisos, auditoría, cola, config, inventario,
+    cobro, compras, admin) o `-- Ámbito: VERTICAL` (turnos veterinarios, pacientes,
+    consulta clínica, agenda de citas). `scripts/migrar.sh` **lo exige**: una
+    pendiente sin esa línea aborta la tanda entera antes de aplicar nada. Las 26
+    migraciones anteriores a la convención no se retocan (una migración aplicada no
+    se edita) y la reja no las mira.
   - Claves primarias `uuid` (`gen_random_uuid()`), `timestamptz` en UTC, fechas de
     negocio con `hoy_bogota()`.
   - Trigger `touch_updated_at()` para `updated_at`.
@@ -225,10 +246,22 @@ reimplemente en Node.
 
 ## Testing
 
-- **No existe framework de pruebas automatizadas** en el repositorio: no hay Jest,
-  Vitest, Playwright ni directorios de tests (solo `.strictcontext/vendor`, que es
-  código de terceros ajeno al proyecto).
-- Comandos de verificación disponibles hoy:
+- **Batería de invariantes con pgTAP** (Fase A4), en `db/pruebas/`, que se corre con
+  `bash scripts/pruebas.sh` (o `bash scripts/pruebas.sh 030` para filtrar, o
+  `--conservar` para dejar la base en pie). Levanta un contenedor efímero **desde
+  `db/migrations/`**, así que cada corrida verifica también que una instalación
+  limpia sigue funcionando. Cada archivo corre en una transacción que termina en
+  `ROLLBACK`; no toca la base de trabajo ni ningún contenedor de compose.
+  - Cubre lo que rompe el producto si se rompe: `exigir_permiso` en toda función de
+    escritura, append-only, FEFO, consulta firmada inmutable, cuadre de caja,
+    consentimiento (Ley 1581), confirmación humana de la IA (C6.9) y el alta de
+    paciente.
+  - Al agregar un archivo: declare `SELECT plan(n)` con el número exacto de pruebas
+    —el corredor falla si no cuadra— y termine en `SELECT * FROM finish(); ROLLBACK;`.
+    Los constructores de datos están en `db/pruebas/000_arnes.sql` y llaman a las
+    funciones de negocio reales, no insertan filas a mano.
+- **No hay** Jest, Vitest ni Playwright: nada automatizado del lado de Node ni de la web.
+- Otros comandos de verificación:
   - `cd web && npm run typecheck` (`tsc --noEmit`).
   - `cd web && npm run build`.
   - `cd worker && npm run check` (`node --check src/index.js`; **solo valida la
@@ -236,10 +269,10 @@ reimplemente en Node.
 - **Contradicción conocida:** `web/package.json` declara `"lint": "next lint"`,
   pero no hay dependencia de ESLint ni archivo de configuración. Trate el lint como
   no disponible salvo que se configure explícitamente (decisión del usuario).
-- **Cómo se prueba realmente** (ver `docs/reporte-fase*.md`): pruebas manuales
-  ejecutadas con `psql` contra la base viva con datos demo, documentadas en una
-  tabla `#/Prueba/Esperado/Obtenido/PASS-FAIL`. Ese es el estándar del proyecto y
-  el que debe seguir al cerrar una fase. Cobertura mínima exigida por
+- **Cómo se cierra una fase** (ver `docs/reporte-fase*.md`): con una tabla
+  `#/Prueba/Esperado/Obtenido/PASS-FAIL`. Lo que se pueda expresar como invariante
+  va a `db/pruebas/`; el resto sigue siendo verificación con `psql` sobre datos
+  demo. Ese es el estándar del proyecto. Cobertura mínima exigida por
   `docs/plan-consolidacion-chasqui-pet.md` §Anexo A2: caso exitoso, datos
   inválidos, permisos insuficientes, ausencia de datos, idempotencia, rollback,
   auditoría, confirmación humana, respuesta al usuario e integración.
@@ -262,6 +295,9 @@ bash scripts/configurar-bot.sh  # comandos y descripción del bot; imprime el
                                 # (no genera la imagen del QR)
 bash scripts/cargar-demo.sh     # opcional: datos de demostración
 bash scripts/crear-superadmin.sh
+bash scripts/migrar.sh --estado # qué migraciones están aplicadas y cuáles faltan
+bash scripts/migrar.sh          # aplica las pendientes, en orden y en transacción
+bash scripts/pruebas.sh         # batería de invariantes (contenedor efímero aparte)
 bash scripts/restaurar.sh <archivo>     # DESTRUCTIVO: ver Comandos peligrosos
 docker compose logs -f worker
 docker compose ps
@@ -532,12 +568,9 @@ existentes ni acceder a producción sin autorización explícita.
   `db/migrations/035_aviso_turno.sql`.
 - El comentario de `web/Dockerfile` dice «Requiere en next.config.js», pero el
   archivo real es `next.config.ts`.
-- La **Fase 2** del asistente está implementada en
-  `db/migrations/079_chasqui_ia_consulta.sql` pero no tiene reporte, no está
-  marcada como completada y no está en git, mientras que las fases 3–5 (que
-  dependen del orden) sí están cerradas. Lo resuelve la **Fase A2** de
-  `docs/plan-consolidacion-chasqui-pet.md`. La Fase 6 (métricas) no está
-  empezada: es la **Fase B5** del mismo plan.
+- ~~La Fase 2 del asistente no tiene reporte ni está en git.~~ **Resuelto por la
+  Fase A2** (12-ago-2026): `docs/reporte-fase2-borrador-consulta.md` y `079`–`083`
+  versionados. La Fase 6 (métricas) sigue sin empezar: es la **Fase B5** del plan.
 - `worker/src/index.js` lee `WORKER_RESCATE_MIN` y `worker/src/telegram.js` lee
   `TELEGRAM_TIMEOUT_MS`, pero **ninguna de las dos aparece en `.env.example` ni
   en el bloque `environment:` del servicio `worker`** de `docker-compose.yml`:
@@ -547,12 +580,11 @@ existentes ni acceder a producción sin autorización explícita.
 - `opencode.json`, `.strictcontext/` y `.strictcontext.db` no están en
   `.gitignore`: cualquier `git add -A` los versionaría, y `opencode.json` lleva
   una credencial real. (`.env.bak.*` sí queda cubierto por el patrón `.env.*`.)
-- `README.md` declara el sistema «terminado (paso 8 de 8)», mientras que hay
-  migraciones nuevas sin versionar (`079`, `081`–`083`) y fases del asistente en
-  curso: el «terminado» aplica al MVP, no al trabajo actual.
-- No hay migrador ni tabla de versiones: qué migraciones están aplicadas en cada
-  ambiente no es verificable desde el repositorio → `[PENDIENTE DE VERIFICAR]`
-  antes de tocar la base.
+- `README.md` declara el sistema «terminado (paso 8 de 8)»: eso aplica al MVP, no
+  al trabajo actual (bloque B del plan de consolidación, sin empezar).
+- ~~No hay migrador ni tabla de versiones.~~ **Resuelto por la Fase A1**: el estado
+  de cada ambiente se consulta con `bash scripts/migrar.sh --estado`. Ya no hay que
+  adivinar mirando `pg_proc`.
 - Estrategia de ramas y proceso de despliegue a producción:
   `[PENDIENTE DE VERIFICAR]` (una sola rama local, sin remoto, sin CI).
 - Estado de la facturación electrónica DIAN: **no implementada**; el sistema emite

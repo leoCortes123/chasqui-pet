@@ -140,6 +140,23 @@ if [ "$MODO" = "aplicar" ] && [ "$BASE_CON_DATOS" = "true" ] && [ "$REGISTRADAS"
   exit 1
 fi
 
+# --- Convención de cabecera (Fase A7a) --------------------------------
+# Cada migración declara en su cabecera si toca el NÚCLEO (identidad,
+# permisos, auditoría, cola, config, inventario, cobro, compras, admin) o
+# un VERTICAL (turnos veterinarios, pacientes, consulta clínica, agenda).
+# Es una línea de texto, y es lo que evita tener que arqueologizar 25
+# archivos el día que haya que separar el producto genérico del
+# veterinario.
+#
+# Se exige aquí y no en las 26 migraciones anteriores a la convención:
+# esas no se reescriben (una migración aplicada no se edita), y como solo
+# pasan por esta reja las PENDIENTES, la regla vale hacia adelante sin
+# tocar nada del pasado. Se exige, no se advierte: una convención que
+# solo avisa se pierde el primer día con prisa.
+ambito_declarado() {  # $1 = ruta
+  head -n 20 "$1" | grep -qE '^--[[:space:]]*Ámbito:[[:space:]]*(NÚCLEO|VERTICAL)\b'
+}
+
 # --- Recorrido ---------------------------------------------------------
 pendientes=0; aplicadas=0; modificadas=0; nuevas=0
 
@@ -151,6 +168,28 @@ if [ "$MODO" = "retro" ]; then
   if [ "$respuesta" != "SI" ]; then
     echo "Cancelado."
     exit 1
+  fi
+fi
+
+# Pasada previa: si a alguna pendiente le falta el ámbito, no se aplica
+# NINGUNA. Fallar a la mitad dejaría media tanda aplicada por un
+# comentario, que es peor que no empezar.
+if [ "$MODO" = "aplicar" ]; then
+  sin_ambito=""
+  for ruta in db/migrations/*.sql; do
+    if [ "$(estado_de "$ruta")" = "pendiente" ] && ! ambito_declarado "$ruta"; then
+      sin_ambito="${sin_ambito} $(basename "$ruta")"
+    fi
+  done
+  if [ -n "$sin_ambito" ]; then
+    echo "ALTO: hay migraciones pendientes sin declarar su ámbito en la cabecera:" >&2
+    for n in $sin_ambito; do echo "  · $n" >&2; done
+    echo >&2
+    echo "Agregue una de estas dos líneas al comentario de cabecera (primeras 20 líneas):" >&2
+    echo "  -- Ámbito: NÚCLEO   (identidad, permisos, auditoría, cola, config," >&2
+    echo "  --                   inventario, cobro, compras, admin)" >&2
+    echo "  -- Ámbito: VERTICAL (turnos veterinarios, pacientes, consulta clínica, agenda)" >&2
+    exit 3
   fi
 fi
 
@@ -170,7 +209,13 @@ for ruta in db/migrations/*.sql; do
     pendiente)
       pendientes=$((pendientes + 1))
       case "$MODO" in
-        estado) printf '  %-40s pendiente\n' "$nombre" ;;
+        estado)
+          if ambito_declarado "$ruta"; then
+            printf '  %-40s pendiente\n' "$nombre"
+          else
+            printf '  %-40s pendiente (SIN ÁMBITO EN LA CABECERA)\n' "$nombre"
+          fi
+          ;;
         retro)
           registrar_sin_aplicar "$ruta"
           nuevas=$((nuevas + 1))
