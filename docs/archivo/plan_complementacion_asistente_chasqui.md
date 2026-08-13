@@ -1,3 +1,9 @@
+> **DOCUMENTO ARCHIVADO.** Superado el 12 de agosto de 2026 por `docs/plan-consolidacion-chasqui-pet.md`.
+> Sus reglas C6.5/C6.8/C6.9/C6.12, la batería de pruebas (§6) y el estado de las fases se trasladaron al Anexo del plan vigente.
+> Se conserva como referencia histórica; no es la fuente vigente.
+
+---
+
 # IMPLEMENTACIÓN DEL PLAN DE COMPLEMENTACIÓN — CHASQUI IA
 
 ## Objetivo
@@ -297,15 +303,15 @@ El orden definido es:
 
 ### Fase 3
 
-`asistente-f3-despacho-recetas`
+`asistente-f3-despacho-recetas` — ✅ **COMPLETADA** (ver reporte: `docs/reporte-fase3-despacho-recetas.md`)
 
 ### Fase 4
 
-`asistente-f4-paquetes-cobros`
+`asistente-f4-paquetes-cobros` — ✅ **COMPLETADA** (ver reporte: `docs/reporte-fase4-paquetes-cobros.md`)
 
 ### Fase 5
 
-`asistente-f5-avisos-duenos`
+`asistente-f5-avisos-duenos` — ✅ **COMPLETADA** (ver reporte: `docs/reporte-fase5-avisos-duenos.md`)
 
 ### Fase 6
 

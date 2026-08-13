@@ -1,3 +1,9 @@
+> **DOCUMENTO ARCHIVADO.** Superado el 12 de agosto de 2026 por `docs/plan-consolidacion-chasqui-pet.md`.
+> Plan de negocio no implementado. La agenda de citas se retoma como fase B1 del plan vigente; DIAN/Factus queda fuera de alcance hasta que un cliente lo solicite.
+> Se conserva como referencia histórica; no es la fuente vigente.
+
+---
+
 # PLAN DE EJECUCIÓN — CHASQUI PET
 ## Fase 1 (Presupuestos + Facturación DIAN vía Factus) + Fase 2 (Reserva + Carnet + Canal Cliente)
 ### Orden de ejecución por sesiones independientes — Sin fechas ni plazos

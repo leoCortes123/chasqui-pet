@@ -4,6 +4,11 @@
 **Estado:** `COMPLETED`
 **Fecha de verificación:** 2026-08-11 (BD viva `chasquipet-db`)
 
+
+> Nota (12-ago-2026): las menciones a `docs/plan_complementacion_asistente_chasqui.md`
+> son históricas. Ese plan está archivado en `docs/archivo/`; la hoja de ruta vigente es
+> `docs/plan-consolidacion-chasqui-pet.md`.
+
 ## Resumen
 
 La Fase 1 del plan de complementación del asistente de Chasqui quedó implementada y verificada:
