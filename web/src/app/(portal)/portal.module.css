@@ -1,7 +1,14 @@
 /* -----------------------------------------------------------------------------
-   Portal administrativo (§11.2).
-   Se usa en un portátil de recepción y en el celular del veterinario, así que
-   todo es una sola columna que se ensancha, sin barras laterales.
+   Marco del portal administrativo (§11.2).
+
+   Punto de partida: el portal se consulta sobre todo desde el celular, de pie
+   y con una mano, y de vez en cuando desde el portátil de recepción. Por eso
+   el diseño es móvil primero y la navegación cambia de forma —barra inferior
+   al alcance del pulgar en el teléfono, fila en la cabecera en escritorio—
+   en lugar de encoger la misma barra hasta que deje de ser usable.
+
+   Un único punto de quiebre, 48rem (768 px): es donde caben cómodamente los
+   siete destinos en una fila. Todo lo de abajo de esa medida es «celular».
 ----------------------------------------------------------------------------- */
 
 .marco {
@@ -13,68 +20,274 @@
 
 /* --- Cabecera ------------------------------------------------------------ */
 
+/* Pegada arriba: en una lista larga de pacientes hay que poder salir o cambiar
+   de sección sin subir hasta el principio. */
 .cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid rgba(233, 238, 245, 0.14);
-  background: rgba(255, 255, 255, 0.03);
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-4);
+  padding-top: max(var(--esp-2), env(safe-area-inset-top));
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
 }
 
 .marca {
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #ffffff;
-  text-decoration: none;
-}
-
-.navegacion {
   display: flex;
-  gap: 1rem;
-  flex: 1;
-}
-
-.navegacion a {
-  color: rgba(233, 238, 245, 0.75);
+  align-items: center;
+  min-height: var(--toque);
+  padding-right: var(--esp-2);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  color: var(--texto);
   text-decoration: none;
-  font-size: 0.95rem;
-}
-
-.navegacion a:hover {
-  color: #ffffff;
+  /* El nombre de la clínica es configurable y puede ser largo: en un celular
+     angosto se recorta en vez de empujar el botón de salir fuera de vista. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .usuario {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  color: rgba(233, 238, 245, 0.6);
+  gap: var(--esp-2);
+  margin-left: auto;
+  min-width: 0;
+  color: var(--texto-tenue);
   font-size: 0.9rem;
 }
 
+.nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 10rem;
+}
+
+/* Debajo de 30rem el nombre se va: el botón de salir y la marca tienen
+   prioridad sobre saber cómo me llamo. */
+@media (max-width: 29.99rem) {
+  .nombre {
+    display: none;
+  }
+}
+
 .salir {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid rgba(233, 238, 245, 0.2);
-  border-radius: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  padding: 0 var(--esp-3);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-2);
   background: transparent;
-  color: rgba(233, 238, 245, 0.75);
+  color: var(--texto-tenue);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: color var(--transicion), border-color var(--transicion);
 }
 
 .salir:hover {
-  color: #ffffff;
-  border-color: rgba(233, 238, 245, 0.45);
+  color: var(--texto);
+  border-color: var(--texto-tenue);
+}
+
+/* --- Navegación de escritorio -------------------------------------------- */
+
+.navEscritorio {
+  display: none;
+}
+
+.navLista {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navEnlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  padding: 0 var(--esp-3);
+  border-radius: var(--radio-2);
+  color: var(--texto-tenue);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--transicion), color var(--transicion);
+}
+
+.navEnlace:hover {
+  background: var(--superficie-hover);
+  color: var(--texto);
+}
+
+/* La sección actual se distingue por color **y** por un subrayado grueso:
+   el color solo no basta para quien no lo percibe (WCAG 1.4.1). */
+.navEnlace[data-actual] {
+  color: var(--marca);
+  background: var(--marca-suave);
+  box-shadow: inset 0 -3px 0 var(--marca);
+}
+
+@media (min-width: 48rem) {
+  .navEscritorio {
+    display: block;
+  }
+
+  .cabecera {
+    gap: var(--esp-4);
+    padding-inline: var(--esp-5);
+  }
+
+  .marca {
+    font-size: 1.15rem;
+  }
+
+  .nombre {
+    max-width: 14rem;
+  }
+}
+
+/* --- Navegación de celular (barra inferior) ------------------------------ */
+
+.navMovil {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 30;
+  border-top: 1px solid var(--borde);
+  background: var(--superficie);
+  /* Barra de gestos del iPhone y equivalentes. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.navMovilLista {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navMovilLista > li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.navMovilEnlace {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  width: 100%;
+  min-height: var(--alto-barra-inferior);
+  padding: var(--esp-1) 0.2rem;
+  color: var(--texto-tenue);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  /* Quita el triángulo del <summary> de «Más», que aquí es un botón. */
+  list-style: none;
+}
+
+.navMovilEnlace::-webkit-details-marker {
+  display: none;
+}
+
+.navIcono {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.navTexto {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navMovilEnlace[data-actual] {
+  color: var(--marca);
+  background: var(--marca-suave);
+  box-shadow: inset 0 3px 0 var(--marca);
+}
+
+/* --- Desplegable «Más» --------------------------------------------------- */
+
+.mas {
+  position: relative;
+}
+
+.masLista {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  z-index: 1;
+  min-width: 13rem;
+  margin: 0 0 var(--esp-1);
+  padding: var(--esp-1);
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-3);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.masEnlace {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-height: var(--toque);
+  padding: 0 var(--esp-3);
+  border-radius: var(--radio-2);
+  color: var(--texto);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.masEnlace:hover {
+  background: var(--superficie-hover);
+}
+
+.masEnlace[data-actual] {
+  color: var(--marca);
+  background: var(--marca-suave);
+}
+
+@media (min-width: 48rem) {
+  .navMovil {
+    display: none;
+  }
 }
 
 /* --- Contenido ----------------------------------------------------------- */
 
 .contenido {
-  width: min(60rem, 100%);
+  width: min(var(--ancho-contenido), 100%);
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 4rem;
+  padding: var(--esp-5) var(--esp-4);
+  /* Reserva el alto de la barra inferior: sin esto, el último botón de un
+     formulario queda debajo del menú y es intocable. */
+  padding-bottom: calc(
+    var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--esp-6)
+  );
   flex: 1;
+}
+
+@media (min-width: 48rem) {
+  .contenido {
+    padding: var(--esp-6) var(--esp-5) var(--esp-7);
+  }
 }

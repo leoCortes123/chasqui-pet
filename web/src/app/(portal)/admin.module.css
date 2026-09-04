@@ -1,52 +1,62 @@
 /* -----------------------------------------------------------------------------
-   Piezas de las vistas administrativas: tarjetas del dashboard, tablas de
+   Piezas de las vistas administrativas: tarjetas del panel, tablas de
    reportes y formularios de configuración. Complementa vistas.module.css;
    nada de lo de allí se repite aquí.
+
+   Todo el color sale de `tokens.css`, así que estas vistas siguen el tema
+   claro u oscuro del sistema sin reglas duplicadas.
 ----------------------------------------------------------------------------- */
 
 .seccion {
-  margin-top: 2.5rem;
+  margin-top: var(--esp-6);
 }
 
 .migaja {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--esp-3);
   font-size: 0.9rem;
 }
 
+/* Los enlaces sueltos van subrayados siempre: distinguirlos sólo por el color
+   falla para quien no percibe ese contraste (WCAG 1.4.1). */
 .migaja a,
 .enlace {
-  color: #6db3e2;
-  text-decoration: none;
+  color: var(--marca);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 .migaja a:hover,
 .enlace:hover {
-  text-decoration: underline;
+  color: var(--marca-viva);
 }
 
 /* --- Tarjetas ------------------------------------------------------------ */
 
+/* `min(100%, 16rem)` evita el desbordamiento clásico de auto-fill: en una
+   pantalla de 360 px una columna de 16rem forzaría scroll horizontal. */
 .tarjetas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--esp-3);
 }
 
 .tarjeta {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 1rem;
-  border: 1px solid rgba(233, 238, 245, 0.12);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
+  gap: var(--esp-1);
+  min-height: var(--toque);
+  padding: var(--esp-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-3);
+  background: var(--superficie);
   color: inherit;
   text-decoration: none;
+  transition: background var(--transicion), border-color var(--transicion);
 }
 
-.tarjeta:hover {
-  border-color: rgba(233, 238, 245, 0.32);
-  background: rgba(255, 255, 255, 0.06);
+a.tarjeta:hover {
+  border-color: var(--borde-fuerte);
+  background: var(--superficie-hover);
 }
 
 .tarjetaTitulo {
@@ -54,62 +64,95 @@
 }
 
 .tarjetaDetalle {
-  color: rgba(233, 238, 245, 0.55);
+  color: var(--texto-tenue);
   font-size: 0.85rem;
   line-height: 1.4;
 }
 
-/* --- Indicadores del dashboard ------------------------------------------- */
+/* Lista que cuelga de un bloque anterior dentro de la misma sección (p. ej.
+   el detalle de medicamentos bajo los indicadores de inventario). */
+.subLista {
+  margin-top: var(--esp-3);
+}
+
+/* --- Indicadores del panel ------------------------------------------------ */
 
 .indicadores {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  gap: var(--esp-3);
+}
+
+/* En celular caben dos por fila: una cifra por fila desperdicia la pantalla
+   y obliga a desplazarse para ver la caja del día completa. */
+@media (max-width: 29.99rem) {
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .indicador {
-  padding: 1rem;
-  border: 1px solid rgba(233, 238, 245, 0.12);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
+  padding: var(--esp-4);
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde);
+  border-radius: var(--radio-3);
+  background: var(--superficie);
 }
 
 .indicadorValor {
   display: block;
-  font-size: 1.9rem;
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 1.9rem);
   font-weight: 800;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .indicadorEtiqueta {
   display: block;
-  margin-top: 0.2rem;
-  color: rgba(233, 238, 245, 0.55);
+  margin-top: var(--esp-1);
+  color: var(--texto-tenue);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
+/* El tono no vive sólo en el color de la cifra: la franja izquierda lo repite
+   como forma, para quien lo ve en escala de grises o en alto contraste. */
+.alerta {
+  border-left-color: var(--alerta-texto);
+}
+
 .alerta .indicadorValor {
-  color: #ffcf70;
+  color: var(--alerta-texto);
+}
+
+.grave {
+  border-left-color: var(--grave-texto);
 }
 
 .grave .indicadorValor {
-  color: #ff9d92;
+  color: var(--grave-texto);
+}
+
+.bien {
+  border-left-color: var(--bien-texto);
 }
 
 .bien .indicadorValor {
-  color: #6ad69a;
+  color: var(--bien-texto);
 }
 
 /* --- Tablas -------------------------------------------------------------- */
 
 /* Las tablas anchas se desplazan dentro de su caja; la página nunca se
-   desplaza de lado. */
+   desplaza de lado. Quien la use debe poner `tabIndex={0}` en el contenedor:
+   una región desplazable tiene que alcanzarse con el teclado (WCAG 2.1.1). */
 .desplazable {
   overflow-x: auto;
-  border: 1px solid rgba(233, 238, 245, 0.12);
-  border-radius: 0.75rem;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-3);
+  background: var(--superficie);
 }
 
 .tabla {
@@ -121,23 +164,23 @@
 
 .tabla th,
 .tabla td {
-  padding: 0.55rem 0.8rem;
+  padding: var(--esp-2) var(--esp-3);
   text-align: left;
-  border-bottom: 1px solid rgba(233, 238, 245, 0.08);
+  border-bottom: 1px solid var(--borde);
 }
 
 .tabla th {
   position: sticky;
   top: 0;
-  background: #131a22;
+  background: var(--superficie-2);
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: rgba(233, 238, 245, 0.6);
+  color: var(--texto-tenue);
 }
 
 .tabla tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--superficie-hover);
 }
 
 .tabla tbody tr:last-child td {
@@ -150,11 +193,11 @@
 }
 
 .resaltada {
-  background: rgba(31, 111, 168, 0.18);
+  background: var(--marca-suave);
 }
 
 .tenue {
-  color: rgba(233, 238, 245, 0.45);
+  color: var(--texto-suave);
 }
 
 /* --- Filtros ------------------------------------------------------------- */
@@ -163,22 +206,26 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-5);
 }
 
 .filtro {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--esp-1);
+  /* Crece hasta ocupar la fila en celular y se acomoda en línea en pantallas
+     anchas, sin que ningún control baje de 10rem y quede inutilizable. */
+  flex: 1 1 10rem;
   font-size: 0.85rem;
-  color: rgba(233, 238, 245, 0.65);
+  color: var(--texto-tenue);
 }
 
 .filtro .campo,
 .filtro input,
 .filtro select {
-  min-width: 10rem;
+  width: 100%;
+  min-width: 0;
 }
 
 /* --- Formularios en línea dentro de tablas ------------------------------- */
@@ -187,39 +234,50 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--esp-2);
 }
 
 .compacto {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid rgba(233, 238, 245, 0.2);
-  border-radius: 0.45rem;
-  background: rgba(0, 0, 0, 0.25);
-  color: inherit;
+  padding: var(--esp-1) var(--esp-2);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-1);
+  background: var(--fondo);
+  color: var(--texto);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   max-width: 9rem;
 }
 
+/* Compacto es visualmente pequeño, pero el área tocable sigue siendo de 44 px:
+   estos botones aparecen dentro de tablas densas y se pulsan con el pulgar. */
 .botonCompacto {
-  padding: 0.35rem 0.7rem;
-  border: 1px solid rgba(233, 238, 245, 0.25);
-  border-radius: 0.45rem;
-  background: transparent;
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  padding: var(--esp-1) var(--esp-3);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-1);
+  background: var(--superficie);
+  color: var(--texto);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .botonCompacto:hover {
-  border-color: rgba(233, 238, 245, 0.5);
+  border-color: var(--texto-tenue);
+  background: var(--superficie-hover);
 }
 
 .peligro {
-  border-color: rgba(255, 138, 128, 0.4);
-  color: #ff9d92;
+  border-color: var(--grave-texto);
+  color: var(--grave-texto);
+}
+
+.peligro:hover {
+  border-color: var(--grave-texto);
+  background: var(--grave-fondo);
 }
 
 .json {
@@ -229,5 +287,5 @@
   overflow: auto;
   font-size: 0.75rem;
   white-space: pre-wrap;
-  color: rgba(233, 238, 245, 0.6);
+  color: var(--texto-tenue);
 }

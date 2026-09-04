@@ -39,16 +39,14 @@ export default async function PaginaConsultas() {
 
       {borradores.length > 0 && (
         <>
-          <h2 className={estilos.titulo}>Sin firmar</h2>
+          <h2 className={estilos.tituloSeccion}>Sin firmar</h2>
           <Lista consultas={borradores} />
         </>
       )}
 
       {resto.length > 0 && (
         <>
-          <h2 className={estilos.titulo} style={{ marginTop: '2rem' }}>
-            Hoy
-          </h2>
+          <h2 className={`${estilos.tituloSeccion} ${estilos.tituloDespues}`}>Hoy</h2>
           <Lista consultas={resto} />
         </>
       )}

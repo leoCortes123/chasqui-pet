@@ -1,0 +1,155 @@
+/* -----------------------------------------------------------------------------
+   Tokens de diseño del portal (§11.2).
+
+   Por qué existe este archivo: hasta ahora cada hoja repetía literales como
+   `rgba(233, 238, 245, 0.55)` y `#0b1016`, lo que hacía imposible tener un tema
+   claro sin tocar las cinco hojas. Aquí vive el único lugar donde se decide un
+   color, un radio o una altura mínima; las hojas de módulo sólo consumen
+   variables.
+
+   Tema: el portal se consulta sobre todo desde el celular, muchas veces con luz
+   de día en la sala de espera, así que sigue `prefers-color-scheme` del sistema
+   en vez de imponer oscuro. La pantalla pública de turnos y la de ingreso
+   quedan fijas en oscuro a propósito (ver el bloque «tema fijo» al final).
+
+   Accesibilidad: los pares texto/fondo de ambos temas se eligieron con razón
+   de contraste ≥ 4.5:1 para texto normal y ≥ 3:1 para texto grande y bordes
+   de control (WCAG 2.2 AA). No cambie un color suelto sin volver a medir.
+----------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Estructura -------------------------------------------------------- */
+
+  /* Ancho de lectura del contenido. 72rem deja ver tablas de reportes en
+     escritorio sin que el texto corrido se vuelva ilegible. */
+  --ancho-contenido: 72rem;
+
+  /* Objetivo táctil mínimo: 44 px (WCAG 2.2 «Target Size (Minimum)»).
+     Todo lo que se pueda tocar —enlaces de la barra, botones, filas de
+     lista— usa esta altura como piso. */
+  --toque: 2.75rem;
+
+  /* Escala de espaciado. Múltiplos de 0.25rem para que todo caiga en la
+     misma rejilla vertical. */
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 0.75rem;
+  --esp-4: 1rem;
+  --esp-5: 1.5rem;
+  --esp-6: 2rem;
+  --esp-7: 3rem;
+
+  --radio-1: 0.45rem;
+  --radio-2: 0.6rem;
+  --radio-3: 0.9rem;
+  --radio-pastilla: 999px;
+
+  /* Alto de la barra inferior del celular. El contenido reserva este espacio
+     abajo para que la barra no tape el último botón de un formulario. */
+  --alto-barra-inferior: 3.75rem;
+
+  --transicion: 120ms ease-out;
+}
+
+/* --- Tema claro (por defecto) --------------------------------------------- */
+
+:root {
+  --fondo: #f4f6f9;
+  --superficie: #ffffff;
+  --superficie-2: #eaeef4;
+  --superficie-hover: #e2e8f0;
+
+  --borde: #c9d3e0;
+  --borde-fuerte: #9dabbd;
+
+  --texto: #0f151c;
+  --texto-tenue: #4d5967;
+  --texto-suave: #6b7889;
+
+  --marca: #185f96;
+  --marca-viva: #1f6fa8;
+  --marca-texto: #ffffff;
+  --marca-suave: rgba(31, 111, 168, 0.12);
+
+  /* Estados. El par «-texto» va sobre el par «-fondo» del mismo estado. */
+  --alerta-texto: #8a5300;
+  --alerta-fondo: rgba(196, 128, 22, 0.16);
+  --grave-texto: #a8261c;
+  --grave-fondo: rgba(190, 60, 48, 0.14);
+  --bien-texto: #16653f;
+  --bien-fondo: rgba(22, 101, 63, 0.14);
+  --neutro-fondo: rgba(15, 21, 28, 0.08);
+
+  --foco: #0b5fa5;
+  --sombra: 0 1px 2px rgba(15, 21, 28, 0.08), 0 4px 12px rgba(15, 21, 28, 0.06);
+}
+
+/* --- Tema oscuro ---------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0b1016;
+    --superficie: #131a22;
+    --superficie-2: #1a232d;
+    --superficie-hover: #202b37;
+
+    --borde: #2a3542;
+    --borde-fuerte: #46556a;
+
+    --texto: #e9eef5;
+    --texto-tenue: #a7b4c4;
+    --texto-suave: #8b98a9;
+
+    --marca: #2a86c6;
+    --marca-viva: #3d99d8;
+    --marca-texto: #06121c;
+    --marca-suave: rgba(61, 153, 216, 0.18);
+
+    --alerta-texto: #ffcf70;
+    --alerta-fondo: rgba(255, 207, 112, 0.16);
+    --grave-texto: #ff9d92;
+    --grave-fondo: rgba(255, 138, 128, 0.16);
+    --bien-texto: #6ad69a;
+    --bien-fondo: rgba(106, 214, 154, 0.16);
+    --neutro-fondo: rgba(233, 238, 245, 0.1);
+
+    --foco: #7cc3f0;
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* --- Tema fijo oscuro ------------------------------------------------------
+   La pantalla de sala de espera vive en un monitor de la clínica y la de
+   ingreso es una tarjeta sobre degradado oscuro: ninguna de las dos debe
+   cambiar con la preferencia del visitante. Se marcan con este atributo y
+   vuelven a fijar los tokens que usan.
+--------------------------------------------------------------------------- */
+
+[data-tema='oscuro'] {
+  color-scheme: dark;
+  --fondo: #0b1016;
+  --superficie: #131a22;
+  --superficie-2: #1a232d;
+  --superficie-hover: #202b37;
+  --borde: #2a3542;
+  --borde-fuerte: #46556a;
+  --texto: #e9eef5;
+  --texto-tenue: #a7b4c4;
+  --texto-suave: #8b98a9;
+  --marca: #2a86c6;
+  --marca-viva: #3d99d8;
+  --marca-texto: #06121c;
+  --marca-suave: rgba(61, 153, 216, 0.18);
+  --alerta-texto: #ffcf70;
+  --alerta-fondo: rgba(255, 207, 112, 0.16);
+  --grave-texto: #ff9d92;
+  --grave-fondo: rgba(255, 138, 128, 0.16);
+  --bien-texto: #6ad69a;
+  --bien-fondo: rgba(106, 214, 154, 0.16);
+  --neutro-fondo: rgba(233, 238, 245, 0.1);
+  --foco: #7cc3f0;
+
+  color: var(--texto);
+}

@@ -106,7 +106,13 @@ docker compose up -d          # levanta todo
 bash scripts/importar-n8n.sh  # carga los workflows del bot en n8n
 bash scripts/configurar-bot.sh
 bash scripts/cargar-demo.sh   # opcional: un día simulado para presentar
+bash scripts/simular.sh       # opcional: jornada completa de hoy, para probar
 ```
+
+`simular.sh` es el banco de datos para pruebas de usuario: además de lo que
+carga la demo, deja agenda de citas, controles y remisiones fechados en el día
+en curso, y se puede volver a correr cada mañana (`limpiar`, `dia`, `todo`,
+`estado`). Ver `db/simulacion/README.md`.
 
 `configurar-bot.sh` imprime al final el enlace del QR de la entrada y la
 dirección de la pantalla de sala de espera.
@@ -221,7 +227,8 @@ puertos están corridos. Se cambian en `.env`.
 db/migrations/   Esquema, funciones y seeds. Se aplican solos al crear la base;
                  sobre una base ya creada, con scripts/migrar.sh.
 db/pruebas/      Batería de invariantes con pgTAP (scripts/pruebas.sh).
-db/demo/         Datos de demostración.
+db/demo/         Datos de demostración del MVP (scripts/cargar-demo.sh).
+db/simulacion/   Banco de datos para pruebas de usuario (scripts/simular.sh).
 n8n/workflows/   Workflows del bot y de los jobs, versionados.
 worker/          Servicio que procesa la cola de tareas asíncronas.
 web/             Next.js: pantalla pública, ingreso y portal clínico.

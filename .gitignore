@@ -54,3 +54,7 @@ Thumbs.db
 # --- Cobertura y pruebas ----------------------------------------------------
 coverage/
 .nyc_output/
+
+# Config local de Claude Code y del editor: es de esta máquina, no del proyecto.
+.claude/settings.local.json
+.obsidian/
