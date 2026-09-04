@@ -1,25 +1,48 @@
 /* -----------------------------------------------------------------------------
    Piezas compartidas por las vistas clínicas: listas, fichas y formulario de
-   consulta. CSS plano, sin framework, igual que el resto del proyecto.
+   consulta. CSS plano sobre los tokens de `tokens.css`, sin framework.
+
+   Criterios que se repiten en todo el archivo:
+   - Cualquier cosa tocable mide al menos `--toque` (44 px) de alto.
+   - Ningún estado se comunica sólo con color: la etiqueta lleva texto y las
+     alertas llevan borde además del fondo.
+   - Nada fuerza desplazamiento horizontal de la página; lo ancho se desplaza
+     dentro de su propia caja.
 ----------------------------------------------------------------------------- */
 
 .titulo {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
+  margin: 0 0 var(--esp-1);
+  font-size: clamp(1.35rem, 1.15rem + 1vw, 1.75rem);
   font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Encabezado de sección dentro de una página: tiene que verse claramente por
+   debajo del <h1>, no del mismo tamaño. */
+.tituloSeccion {
+  margin: 0 0 var(--esp-3);
+  font-size: clamp(1.05rem, 0.98rem + 0.4vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Encabezado que sigue a un bloque anterior: necesita aire arriba para que se
+   lea como sección nueva y no como pie de la lista de encima. */
+.tituloDespues {
+  margin-top: var(--esp-6);
 }
 
 .subtitulo {
-  margin: 0 0 1.5rem;
-  color: rgba(233, 238, 245, 0.6);
+  margin: 0 0 var(--esp-5);
+  color: var(--texto-tenue);
   font-size: 0.95rem;
 }
 
 .vacio {
-  padding: 2rem 1rem;
-  border: 1px dashed rgba(233, 238, 245, 0.2);
-  border-radius: 0.75rem;
-  color: rgba(233, 238, 245, 0.6);
+  padding: var(--esp-6) var(--esp-4);
+  border: 1px dashed var(--borde-fuerte);
+  border-radius: var(--radio-3);
+  color: var(--texto-tenue);
   text-align: center;
 }
 
@@ -31,49 +54,57 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--esp-2);
 }
 
 .fila {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgba(233, 238, 245, 0.12);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
+  gap: var(--esp-3);
+  min-height: var(--toque);
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-3);
+  background: var(--superficie);
   color: inherit;
   text-decoration: none;
+  transition: background var(--transicion), border-color var(--transicion);
 }
 
 .fila:hover {
-  border-color: rgba(233, 238, 245, 0.3);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--borde-fuerte);
+  background: var(--superficie-hover);
 }
 
 .emoji {
   font-size: 1.4rem;
+  flex: none;
 }
 
 .filaTexto {
   flex: 1;
   min-width: 0;
+  display: block;
 }
 
 .filaNombre {
+  display: block;
   font-weight: 600;
 }
 
 .filaDetalle {
-  color: rgba(233, 238, 245, 0.55);
+  display: block;
+  color: var(--texto-tenue);
   font-size: 0.85rem;
 }
 
 /* --- Etiquetas de estado ------------------------------------------------- */
 
 .etiqueta {
+  flex: none;
   padding: 0.15rem 0.55rem;
-  border-radius: 999px;
+  border: 1px solid transparent;
+  border-radius: var(--radio-pastilla);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -82,51 +113,56 @@
 }
 
 .borrador {
-  background: rgba(255, 207, 112, 0.18);
-  color: #ffcf70;
+  background: var(--alerta-fondo);
+  border-color: var(--alerta-texto);
+  color: var(--alerta-texto);
 }
 
 .firmada {
-  background: rgba(106, 214, 154, 0.16);
-  color: #6ad69a;
+  background: var(--bien-fondo);
+  border-color: var(--bien-texto);
+  color: var(--bien-texto);
 }
 
 .anulada {
-  background: rgba(233, 238, 245, 0.12);
-  color: rgba(233, 238, 245, 0.6);
+  background: var(--neutro-fondo);
+  border-color: var(--borde-fuerte);
+  color: var(--texto-tenue);
 }
 
 /* --- Ficha del paciente -------------------------------------------------- */
 
 .ficha {
-  padding: 1.25rem;
-  border: 1px solid rgba(233, 238, 245, 0.14);
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.04);
-  margin-bottom: 1.5rem;
+  padding: var(--esp-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-3);
+  background: var(--superficie);
+  margin-bottom: var(--esp-5);
 }
 
 .fichaNombre {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: clamp(1.4rem, 1.15rem + 1.2vw, 1.6rem);
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .datos {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 1.25rem;
-  margin: 0.5rem 0 0;
-  color: rgba(233, 238, 245, 0.7);
+  gap: var(--esp-1) var(--esp-4);
+  margin: var(--esp-2) 0 0;
+  color: var(--texto-tenue);
   font-size: 0.95rem;
 }
 
 .alergias {
-  margin: 0.75rem 0 0;
-  padding: 0.6rem 0.85rem;
-  border-radius: 0.6rem;
-  background: rgba(255, 138, 128, 0.14);
-  color: #ff9d92;
+  margin: var(--esp-3) 0 0;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--grave-texto);
+  border-radius: var(--radio-2);
+  background: var(--grave-fondo);
+  color: var(--grave-texto);
   font-weight: 600;
 }
 
@@ -135,17 +171,18 @@
 .historia {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--esp-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .entrada {
-  padding: 0.9rem 1rem;
-  border-left: 3px solid rgba(31, 111, 168, 0.8);
-  border-radius: 0 0.6rem 0.6rem 0;
-  background: rgba(255, 255, 255, 0.03);
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--marca);
+  border-radius: 0 var(--radio-2) var(--radio-2) 0;
+  background: var(--superficie);
 }
 
 .entradaFecha {
@@ -153,12 +190,12 @@
 }
 
 .entradaAutor {
-  color: rgba(233, 238, 245, 0.5);
+  color: var(--texto-tenue);
   font-size: 0.85rem;
 }
 
 .entradaCampo {
-  margin: 0.35rem 0 0;
+  margin: var(--esp-1) 0 0;
   line-height: 1.45;
 }
 
@@ -167,13 +204,13 @@
 .formulario {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--esp-4);
 }
 
 .grupo {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--esp-1);
 }
 
 .grupo > label,
@@ -183,67 +220,88 @@
 }
 
 .ayuda {
-  color: rgba(233, 238, 245, 0.5);
-  font-size: 0.8rem;
+  color: var(--texto-tenue);
+  font-size: 0.82rem;
 }
 
 .campo,
 .area,
 .selector {
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid rgba(233, 238, 245, 0.2);
-  border-radius: 0.6rem;
-  background: rgba(0, 0, 0, 0.25);
-  color: inherit;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--fondo);
+  color: var(--texto);
   font: inherit;
 }
 
 .area {
-  min-height: 5.5rem;
+  min-height: 6.5rem;
   resize: vertical;
   line-height: 1.45;
 }
 
+.campo::placeholder,
+.area::placeholder {
+  color: var(--texto-suave);
+}
+
+/* El anillo global de :focus-visible no aplica a los campos de texto, que sí
+   deben marcarse al escribir con el ratón: aquí se hace explícito. */
 .campo:focus,
 .area:focus,
 .selector:focus {
-  outline: 2px solid #1f6fa8;
+  outline: 3px solid var(--foco);
   outline-offset: 1px;
+  border-color: var(--foco);
 }
 
 .rejilla {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--esp-3);
 }
 
 .bloque {
   margin: 0;
-  padding: 1rem;
-  border: 1px solid rgba(233, 238, 245, 0.14);
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.03);
+  padding: var(--esp-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-3);
+  background: var(--superficie);
 }
 
+/* Barra de acciones del formulario. Queda pegada abajo para que «Guardar» y
+   «Firmar» estén siempre a la vista, pero por encima de la barra de
+   navegación del celular: si no, el menú tapa el botón. */
 .acciones {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--esp-3);
   align-items: center;
   position: sticky;
-  bottom: 0;
-  padding: 0.9rem 0;
-  background: linear-gradient(to top, #0b1016 65%, transparent);
+  bottom: calc(var(--alto-barra-inferior) + env(safe-area-inset-bottom));
+  padding: var(--esp-3) 0;
+  background: linear-gradient(to top, var(--fondo) 70%, transparent);
+}
+
+@media (min-width: 48rem) {
+  .acciones {
+    bottom: 0;
+  }
 }
 
 .boton,
 .botonPrimario {
-  padding: 0.7rem 1.3rem;
-  border: 1px solid rgba(233, 238, 245, 0.25);
-  border-radius: 0.6rem;
-  background: transparent;
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--toque);
+  padding: var(--esp-2) var(--esp-5);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--superficie);
+  color: var(--texto);
   font: inherit;
   font-weight: 600;
   text-decoration: none;
@@ -251,47 +309,70 @@
 }
 
 .boton:hover {
-  border-color: rgba(233, 238, 245, 0.5);
+  border-color: var(--texto-tenue);
+  background: var(--superficie-hover);
 }
 
 .botonPrimario {
-  border-color: transparent;
-  background: #1f6fa8;
-  color: #ffffff;
+  border-color: var(--marca);
+  background: var(--marca);
+  color: var(--marca-texto);
 }
 
 .botonPrimario:hover {
-  background: #2a86c6;
+  background: var(--marca-viva);
+  border-color: var(--marca-viva);
 }
 
 .botonPrimario:disabled,
 .boton:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
+/* Mensajes de resultado: llevan borde además de color de fondo para que se
+   distingan en modo de alto contraste y sin percepción de color. */
 .error {
   margin: 0;
-  padding: 0.7rem 0.9rem;
-  border-radius: 0.6rem;
-  background: rgba(255, 138, 128, 0.14);
-  color: #ff9d92;
+  padding: var(--esp-3);
+  border: 1px solid var(--grave-texto);
+  border-radius: var(--radio-2);
+  background: var(--grave-fondo);
+  color: var(--grave-texto);
 }
 
 .exito {
   margin: 0;
-  padding: 0.7rem 0.9rem;
-  border-radius: 0.6rem;
-  background: rgba(106, 214, 154, 0.14);
-  color: #6ad69a;
+  padding: var(--esp-3);
+  border: 1px solid var(--bien-texto);
+  border-radius: var(--radio-2);
+  background: var(--bien-fondo);
+  color: var(--bien-texto);
 }
 
+/* --- Buscador ------------------------------------------------------------ */
+
+/* En celular el campo ocupa el ancho completo y el botón va debajo: dos
+   controles de 44 px uno al lado del otro no caben sin encogerlos. */
 .buscador {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-5);
 }
 
 .buscador .campo {
-  flex: 1;
+  flex: 1 1 12rem;
+}
+
+.buscador .boton,
+.buscador .botonPrimario {
+  flex: 1 1 auto;
+}
+
+@media (min-width: 30rem) {
+  .buscador .boton,
+  .buscador .botonPrimario {
+    flex: 0 0 auto;
+  }
 }

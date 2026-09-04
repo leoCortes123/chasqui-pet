@@ -98,7 +98,7 @@ export default function Ingreso({ volver, enlace }: { volver: string; enlace?: s
   }, [estado, challenge]);
 
   return (
-    <main className={estilos.pantalla}>
+    <main className={estilos.pantalla} data-tema="oscuro">
       <section className={estilos.tarjeta}>
         <h1 className={estilos.titulo}>Chasqui Pet</h1>
         <p className={estilos.subtitulo}>Portal de la clínica</p>

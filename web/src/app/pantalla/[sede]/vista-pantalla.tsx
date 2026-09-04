@@ -165,7 +165,7 @@ export default function VistaPantalla({
   );
 
   return (
-    <main className={estilos.pantalla}>
+    <main className={estilos.pantalla} data-tema="oscuro">
       <header className={estilos.encabezado}>
         <div className={estilos.marca}>
           <h1 className={estilos.clinica}>{clinica}</h1>

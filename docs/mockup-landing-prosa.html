@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROSA — Fundación Pro Salud Animal</title>
+<meta name="description" content="Propuesta de sitio web para la Fundación Pro Salud Animal PROSA, Kennedy, Bogotá.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* =====================================================================
+     PROSA — propuesta de landing
+     Paleta: arena cálida + verde pino (turno gratuito) + coral (cita con
+     reserva). La dualidad de color ES el modelo de negocio: dos caminos,
+     dos colores, un mismo consultorio.
+     ===================================================================== */
+
+  :root{
+    --bg:            #f6f1e6;
+    --bg-raised:     #fffdf8;
+    --ink:           #241d17;
+    --ink-soft:      #5b5045;
+    --ink-faint:     #8a8071;
+    --line:          #e3d9c6;
+    --line-strong:   #d3c6ab;
+
+    --pine:          #2e4b3b;
+    --pine-ink:      #1c3026;
+    --pine-soft:     #e3ece2;
+    --pine-line:     #c3d6c2;
+
+    --coral:         #cf4f2b;
+    --coral-ink:     #7a2c15;
+    --coral-soft:    #f7e2d5;
+    --coral-line:    #e7c2ab;
+
+    --shadow:        0 1px 2px rgba(36,29,23,.06), 0 18px 40px -26px rgba(36,29,23,.45);
+    --shadow-lg:      0 2px 6px rgba(36,29,23,.08), 0 30px 60px -30px rgba(36,29,23,.55);
+
+    --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    --text:    "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --radius-lg: 26px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:          #1c1712;
+      --bg-raised:   #26201a;
+      --ink:         #f3ecdd;
+      --ink-soft:    #cabfa9;
+      --ink-faint:   #8f8570;
+      --line:        #392f24;
+      --line-strong: #4a3d2c;
+
+      --pine:        #7bc19a;
+      --pine-ink:    #e6f3ea;
+      --pine-soft:   #202e26;
+      --pine-line:   #33473a;
+
+      --coral:       #ef8258;
+      --coral-ink:   #ffe4d3;
+      --coral-soft:  #33241b;
+      --coral-line:  #55392a;
+
+      --shadow:      0 1px 2px rgba(0,0,0,.5), 0 18px 40px -26px rgba(0,0,0,.85);
+      --shadow-lg:   0 2px 6px rgba(0,0,0,.55), 0 30px 60px -30px rgba(0,0,0,.9);
+    }
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+  }
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--text);
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3{
+    font-family:var(--display);
+    color:var(--ink);
+    margin:0 0 .4em;
+    text-wrap:balance;
+    font-weight:700;
+    letter-spacing:-.01em;
+  }
+  p{ margin:0 0 1em; color:var(--ink-soft); }
+  a{ color:inherit; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding:0 28px;
+  }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:.72rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+
+  /* ---------- cinta de propuesta ---------- */
+  .cinta-propuesta{
+    background:var(--pine);
+    color:var(--pine-soft);
+    text-align:center;
+    font-family:var(--mono);
+    font-size:.78rem;
+    letter-spacing:.03em;
+    padding:9px 16px;
+  }
+  .cinta-propuesta strong{ color:#fff; font-weight:600; }
+  @media (prefers-color-scheme: dark){
+    .cinta-propuesta{ color:#0f1a14; }
+    .cinta-propuesta strong{ color:#0a120e; }
+  }
+
+  /* ---------- header ---------- */
+  header.sitio{
+    position:sticky; top:0; z-index:40;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-fila{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:24px; padding:14px 0;
+  }
+  .marca{ display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .marca svg{ width:30px; height:30px; color:var(--coral); flex:none; }
+  .marca-texto{ line-height:1.1; }
+  .marca-texto .nombre{
+    font-family:var(--display); font-weight:800; font-size:1.28rem; letter-spacing:-.01em;
+  }
+  .marca-texto .sub{
+    font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint);
+  }
+
+  nav.principal{ display:flex; align-items:center; gap:30px; }
+  nav.principal a{
+    text-decoration:none; font-size:.92rem; font-weight:600; color:var(--ink-soft);
+  }
+  nav.principal a:hover{ color:var(--ink); }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    font-family:var(--text); font-weight:700; font-size:.92rem;
+    padding:11px 22px; border-radius:100px; border:1.5px solid transparent;
+    text-decoration:none; cursor:pointer; white-space:nowrap;
+  }
+  .btn:focus-visible{ outline:2px solid var(--coral); outline-offset:2px; }
+  .btn-coral{ background:var(--coral); color:#fff8f2; }
+  .btn-coral:hover{ background:var(--coral-ink); }
+  .btn-pine{ background:var(--pine); color:#f3f8f4; }
+  .btn-pine:hover{ background:var(--pine-ink); }
+  .btn-linea{ background:transparent; border-color:var(--line-strong); color:var(--ink); }
+  .btn-linea:hover{ border-color:var(--ink-soft); }
+
+  .cta-header{ display:flex; }
+  .hamb{
+    display:none; background:none; border:1.5px solid var(--line-strong); border-radius:10px;
+    width:42px; height:42px; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .hamb svg{ width:20px; height:20px; }
+
+  @media (max-width:860px){
+    nav.principal{ display:none; }
+    .cta-header .btn span.full{ display:none; }
+    .hamb{ display:inline-flex; }
+  }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:64px 0 76px; }
+  .hero-grid{
+    display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center;
+  }
+  @media (max-width:900px){
+    .hero-grid{ grid-template-columns:1fr; gap:38px; }
+  }
+  .hero-tag{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--pine-soft); color:var(--pine-ink); border:1px solid var(--pine-line);
+    border-radius:100px; padding:6px 14px; font-size:.78rem; font-weight:600; margin-bottom:22px;
+  }
+  .hero-tag .punto{ width:7px; height:7px; border-radius:50%; background:var(--pine); }
+  @media (prefers-color-scheme: dark){ .hero-tag .punto{ background:var(--pine-ink); } }
+
+  .hero h1{ font-size:clamp(2.1rem, 4.1vw, 3.3rem); line-height:1.06; }
+  .hero .lead{ font-size:1.13rem; max-width:46ch; margin-bottom:30px; }
+  .hero-cta{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:34px; }
+  .hero-cta .btn{ padding:14px 26px; font-size:.98rem; }
+
+  .hero-nota{
+    display:flex; gap:10px; align-items:flex-start; font-size:.86rem; color:var(--ink-faint);
+    max-width:42ch;
+  }
+  .hero-nota svg{ width:16px; height:16px; flex:none; margin-top:2px; color:var(--ink-faint); }
+
+  .hero-media{ position:relative; }
+  .img-slot{
+    position:relative; width:100%; overflow:hidden;
+    border:1px solid var(--line-strong);
+    background:
+      repeating-linear-gradient(135deg, transparent 0 12px, color-mix(in srgb, var(--ink) 5%, transparent) 12px 13px),
+      linear-gradient(160deg, var(--pine-soft), var(--coral-soft));
+    display:flex; align-items:center; justify-content:center; text-align:center;
+  }
+  .img-slot img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .img-slot .etiqueta{
+    position:relative; z-index:1; padding:18px; max-width:80%;
+  }
+  .img-slot .etiqueta .titulo{ font-weight:700; font-size:.92rem; color:var(--ink); margin-bottom:4px; }
+  .img-slot .etiqueta .medida{ font-family:var(--mono); font-size:.74rem; color:var(--ink-faint); }
+
+  .hero-media .img-slot{ aspect-ratio:4/5; border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); }
+
+  .hero-badge{
+    position:absolute; left:-18px; bottom:26px; z-index:2;
+    background:var(--bg-raised); border:1px solid var(--line);
+    border-radius:var(--radius-md); box-shadow:var(--shadow);
+    padding:14px 18px; display:flex; gap:12px; align-items:center; max-width:230px;
+  }
+  @media (max-width:520px){ .hero-badge{ left:12px; bottom:-20px; } }
+  .hero-badge .num{ font-family:var(--display); font-weight:800; font-size:1.6rem; color:var(--coral); }
+  .hero-badge .txt{ font-size:.76rem; color:var(--ink-soft); line-height:1.25; }
+
+  /* ---------- franja de datos ---------- */
+  .datos{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:30px 0; }
+  .datos-fila{
+    display:flex; flex-wrap:wrap; justify-content:space-between; gap:24px;
+  }
+  .dato{ flex:1 1 180px; }
+  .dato .num{ font-family:var(--mono); font-weight:600; font-size:1.5rem; color:var(--ink); }
+  .dato .txt{ font-size:.8rem; color:var(--ink-faint); margin-top:2px; }
+
+  /* ---------- secciones genéricas ---------- */
+  section{ padding:88px 0; }
+  @media (max-width:640px){ section{ padding:60px 0; } }
+  .cabecera-seccion{ max-width:640px; margin-bottom:48px; }
+  .cabecera-seccion h2{ font-size:clamp(1.7rem, 3vw, 2.3rem); }
+  .cabecera-seccion .eyebrow{ margin-bottom:12px; display:block; }
+
+  /* ---------- cómo funciona (la dualidad) ---------- */
+  .duo{ display:grid; grid-template-columns:1fr 1fr; gap:26px; }
+  @media (max-width:780px){ .duo{ grid-template-columns:1fr; } }
+
+  .via{
+    border-radius:var(--radius-lg); border:1px solid var(--line);
+    background:var(--bg-raised); overflow:hidden; box-shadow:var(--shadow);
+    display:flex; flex-direction:column;
+  }
+  .via .img-slot{ aspect-ratio:3/2; border-radius:0; border:none; border-bottom:1px solid var(--line); }
+  .via-cuerpo{ padding:28px 28px 30px; display:flex; flex-direction:column; gap:14px; flex:1; }
+  .via-tag{
+    align-self:flex-start; font-family:var(--mono); font-size:.7rem; letter-spacing:.08em;
+    text-transform:uppercase; padding:5px 11px; border-radius:100px; font-weight:600;
+  }
+  .via.gratis .via-tag{ background:var(--pine-soft); color:var(--pine-ink); border:1px solid var(--pine-line); }
+  .via.reserva .via-tag{ background:var(--coral-soft); color:var(--coral-ink); border:1px solid var(--coral-line); }
+  .via h3{ font-size:1.4rem; }
+  .via-precio{
+    margin-top:auto; padding-top:14px; border-top:1px dashed var(--line-strong);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .via-precio .monto{ font-family:var(--mono); font-weight:600; font-size:1.05rem; }
+  .via.gratis .via-precio .monto{ color:var(--pine); }
+  .via.reserva .via-precio .monto{ color:var(--coral); }
+  .via-precio .subtexto{ font-family:var(--mono); font-size:.68rem; color:var(--ink-faint); display:block; margin-top:2px; }
+
+  /* ---------- servicios ---------- */
+  .servicios-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:1px;
+    background:var(--line); border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden;
+  }
+  .servicio{ background:var(--bg-raised); padding:30px 26px; }
+  .servicio .icono{
+    width:42px; height:42px; border-radius:12px; background:var(--pine-soft); color:var(--pine);
+    display:flex; align-items:center; justify-content:center; margin-bottom:16px;
+  }
+  .servicio .icono svg{ width:22px; height:22px; }
+  .servicio h3{ font-size:1.04rem; margin-bottom:6px; }
+  .servicio p{ font-size:.88rem; margin:0; }
+
+  /* ---------- equipo ---------- */
+  .equipo-grid{ display:grid; grid-template-columns:.85fr 1.15fr; gap:32px; align-items:stretch; }
+  @media (max-width:780px){ .equipo-grid{ grid-template-columns:1fr; } }
+  .persona{
+    background:var(--bg-raised); border:1px solid var(--line); border-radius:var(--radius-lg);
+    overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column;
+  }
+  .persona .img-slot{ aspect-ratio:1/1; border-radius:0; border:none; border-bottom:1px solid var(--line); }
+  .persona-cuerpo{ padding:24px 26px 28px; }
+  .persona-cuerpo .rol{ font-family:var(--mono); font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--coral); margin-bottom:6px; }
+  .persona-cuerpo h3{ font-size:1.15rem; margin-bottom:8px; }
+  .persona-cuerpo p{ font-size:.9rem; margin:0; }
+
+  .equipo-foto .img-slot{ aspect-ratio:3/2; border-radius:0; border:none; border-bottom:1px solid var(--line); }
+
+  /* ---------- testimonio ---------- */
+  .testimonio{
+    background:var(--pine); color:var(--pine-soft); border-radius:var(--radius-lg);
+    padding:56px clamp(24px,6vw,72px); text-align:center; position:relative; overflow:hidden;
+  }
+  .testimonio .marca-cita{
+    font-family:var(--display); font-size:4.2rem; line-height:1; color:color-mix(in srgb, var(--pine-soft) 30%, transparent);
+    margin-bottom:-14px;
+  }
+  .testimonio blockquote{
+    margin:0 auto 20px; max-width:46ch; font-family:var(--display); font-weight:600;
+    font-size:clamp(1.2rem, 2.3vw, 1.55rem); line-height:1.35; color:#fff;
+  }
+  .testimonio cite{ font-style:normal; font-family:var(--mono); font-size:.78rem; opacity:.85; }
+  @media (prefers-color-scheme: dark){
+    .testimonio{ color:#0f1a14; }
+    .testimonio blockquote{ color:#0a120e; }
+  }
+
+  /* ---------- ubicación ---------- */
+  .ubi-grid{ display:grid; grid-template-columns:.9fr 1.1fr; gap:40px; align-items:center; }
+  @media (max-width:860px){ .ubi-grid{ grid-template-columns:1fr; } }
+  .ubi-lista{ list-style:none; margin:0 0 28px; padding:0; display:flex; flex-direction:column; gap:20px; }
+  .ubi-lista li{ display:flex; gap:14px; }
+  .ubi-lista .icono{
+    width:38px; height:38px; border-radius:10px; background:var(--coral-soft); color:var(--coral-ink);
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .ubi-lista .icono svg{ width:19px; height:19px; }
+  .ubi-lista .titulo{ font-weight:700; font-size:.95rem; }
+  .ubi-lista .detalle{ font-size:.88rem; color:var(--ink-soft); }
+  .ubi-lista .detalle.mono{ font-family:var(--mono); }
+
+  .mapa-tarjeta{
+    border:1px solid var(--line); border-radius:var(--radius-lg); background:var(--bg-raised);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .mapa-svg{ width:100%; height:auto; display:block; background:var(--pine-soft); }
+  .mapa-pie{ padding:16px 20px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .mapa-pie .txt{ font-size:.82rem; color:var(--ink-soft); }
+  .mapa-pie .txt strong{ color:var(--ink); }
+
+  /* ---------- cierre CTA ---------- */
+  .cierre{
+    text-align:center; max-width:560px; margin:0 auto; padding:84px 28px;
+  }
+  .cierre h2{ font-size:clamp(1.7rem,3.4vw,2.4rem); }
+  .cierre-cta{ display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-top:26px; }
+
+  /* ---------- footer ---------- */
+  footer{ background:var(--pine); color:var(--pine-soft); padding:56px 0 28px; }
+  .footer-grid{ display:flex; flex-wrap:wrap; gap:40px; justify-content:space-between; margin-bottom:40px; }
+  .footer-marca{ max-width:320px; }
+  .footer-marca .marca-texto .nombre{ color:#fff; }
+  .footer-marca .marca-texto .sub{ color:color-mix(in srgb, var(--pine-soft) 70%, transparent); }
+  .footer-marca p{ color:color-mix(in srgb, var(--pine-soft) 82%, transparent); font-size:.88rem; margin-top:14px; }
+  footer .marca svg{ color:#fff; }
+  .footer-cols{ display:flex; gap:56px; flex-wrap:wrap; }
+  .footer-col h4{
+    font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+    color:color-mix(in srgb, var(--pine-soft) 65%, transparent); margin:0 0 14px; font-weight:600;
+  }
+  .footer-col ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+  .footer-col a{ text-decoration:none; font-size:.88rem; color:#fff; opacity:.9; }
+  .footer-col a:hover{ opacity:1; text-decoration:underline; }
+  .footer-legal{
+    border-top:1px solid color-mix(in srgb, var(--pine-soft) 25%, transparent);
+    padding-top:22px; display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px;
+    font-size:.76rem; color:color-mix(in srgb, var(--pine-soft) 70%, transparent);
+  }
+
+  @media (prefers-color-scheme: dark){
+    footer{ background:#141d18; }
+  }
+
+  /* ---------- menú móvil ---------- */
+  .panel-movil{
+    display:none; position:fixed; inset:0; z-index:50; background:var(--bg);
+    padding:20px 24px; overflow-y:auto;
+  }
+  .panel-movil.abierto{ display:block; }
+  .panel-movil .cierre-panel{
+    display:flex; justify-content:flex-end; margin-bottom:24px;
+  }
+  .panel-movil nav{ display:flex; flex-direction:column; gap:22px; }
+  .panel-movil nav a{ font-family:var(--display); font-size:1.5rem; font-weight:700; text-decoration:none; color:var(--ink); }
+  .panel-movil .btn{ margin-top:30px; width:100%; }
+</style>
+</head>
+<body>
+
+<div class="cinta-propuesta">
+  <strong>Propuesta de diseño</strong> — para revisión de la Fundación PROSA · sitio no publicado
+</div>
+
+<header class="sitio">
+  <div class="wrap nav-fila">
+    <a class="marca" href="#inicio">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <circle cx="7" cy="8" r="2"></circle>
+        <circle cx="12" cy="6" r="2"></circle>
+        <circle cx="17" cy="8" r="2"></circle>
+        <path d="M12 11c-3.5 0-6 2.4-6 5.2 0 1.9 1.6 3.3 3.6 3.3.9 0 1.6-.3 2.4-.3s1.5.3 2.4.3c2 0 3.6-1.4 3.6-3.3 0-2.8-2.5-5.2-6-5.2z"></path>
+      </svg>
+      <span class="marca-texto">
+        <span class="nombre">PROSA</span><br>
+        <span class="sub">Pro Salud Animal</span>
+      </span>
+    </a>
+
+    <nav class="principal" aria-label="Navegación principal">
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#servicios">Servicios</a>
+      <a href="#equipo">Equipo</a>
+      <a href="#ubicacion">Ubicación</a>
+    </nav>
+
+    <div class="cta-header">
+      <a class="btn btn-coral" href="#como-funciona"><span class="full">Reservar</span> cita</a>
+    </div>
+    <button class="hamb" aria-label="Abrir menú" aria-controls="panelMovil" aria-expanded="false" id="btnMenu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
+    </button>
+  </div>
+</header>
+
+<div class="panel-movil" id="panelMovil">
+  <div class="cierre-panel">
+    <button class="hamb" aria-label="Cerrar menú" id="btnCerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </div>
+  <nav>
+    <a href="#como-funciona">Cómo funciona</a>
+    <a href="#servicios">Servicios</a>
+    <a href="#equipo">Equipo</a>
+    <a href="#ubicacion">Ubicación</a>
+  </nav>
+  <a class="btn btn-coral" href="#como-funciona">Reservar cita</a>
+</div>
+
+<main id="inicio">
+
+  <section class="hero" style="padding-top:56px;">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="hero-tag"><span class="punto"></span>Fundación sin ánimo de lucro · Kennedy, Bogotá</span>
+        <h1>Cuidamos a su mascota desde 2018 — y seguimos aquí para usted.</h1>
+        <p class="lead">PROSA es una fundación veterinaria. La consulta siempre es gratuita: usted solo paga si hay tratamiento. Atendemos por orden de llegada, como siempre lo hemos hecho — y ahora también puede reservar su hora si no puede esperar el turno del día.</p>
+        <div class="hero-cta">
+          <a class="btn btn-coral" href="#como-funciona">Reservar cita con hora</a>
+          <a class="btn btn-linea" href="#ubicacion">Ver turno de hoy por WhatsApp</a>
+        </div>
+        <div class="hero-nota">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 2"></path></svg>
+          <span>El turno gratuito de siempre no cambia. La cita con hora es un servicio adicional, no un reemplazo.</span>
+        </div>
+      </div>
+
+      <div class="hero-media">
+        <div class="img-slot">
+          <img src="" alt="" style="display:none;">
+          <div class="etiqueta">
+            <div class="titulo">Foto: veterinario examinando un perro o gato en consulta</div>
+            <div class="medida">1000 × 1250 px · relación 4:5</div>
+          </div>
+        </div>
+        <div class="hero-badge">
+          <span class="num">2018</span>
+          <span class="txt">Año en que abrimos las puertas en Kennedy</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="datos">
+    <div class="wrap datos-fila">
+      <div class="dato"><div class="num">2018</div><div class="txt">Fundación registrada</div></div>
+      <div class="dato"><div class="num">$0</div><div class="txt">Valor de la consulta</div></div>
+      <div class="dato"><div class="num">Kennedy</div><div class="txt">Barrio donde operamos</div></div>
+      <div class="dato"><div class="num">ESAL</div><div class="txt">Entidad sin ánimo de lucro</div></div>
+    </div>
+  </section>
+
+  <section id="como-funciona">
+    <div class="wrap">
+      <div class="cabecera-seccion">
+        <span class="eyebrow">Dos formas de ser atendido</span>
+        <h2>El mismo consultorio, dos caminos para llegar</h2>
+        <p>Ninguno reemplaza al otro. El turno gratuito sigue siendo el corazón de la fundación; la cita con reserva es una opción para quien prefiere no esperar.</p>
+      </div>
+
+      <div class="duo">
+        <article class="via gratis">
+          <div class="img-slot">
+            <div class="etiqueta">
+              <div class="titulo">Foto: sala de espera con personas y mascotas en fila</div>
+              <div class="medida">1200 × 800 px · relación 3:2</div>
+            </div>
+          </div>
+          <div class="via-cuerpo">
+            <span class="via-tag">Sin costo</span>
+            <h3>Turno del día</h3>
+            <p>Atendemos por orden de llegada, todos los días. La consulta es gratuita; solo se cobra si su mascota necesita tratamiento o medicamentos. Es el servicio que siempre nos ha definido.</p>
+            <div class="via-precio">
+              <div>
+                <span class="monto">Consulta: $0</span><br>
+                <span class="subtexto">solo se cobra el tratamiento</span>
+              </div>
+              <a class="btn btn-linea" href="#ubicacion">Ver dirección</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="via reserva">
+          <div class="img-slot">
+            <div class="etiqueta">
+              <div class="titulo">Foto: consulta veterinaria tranquila, uno a uno</div>
+              <div class="medida">1200 × 800 px · relación 3:2</div>
+            </div>
+          </div>
+          <div class="via-cuerpo">
+            <span class="via-tag">Con reserva</span>
+            <h3>Cita agendada</h3>
+            <p>Elija el día y la franja que le sirva y llegue directo a su hora, sin esperar el turno. El valor de la reserva se suma al del tratamiento y ayuda a sostener el trabajo de la fundación.</p>
+            <div class="via-precio">
+              <div>
+                <span class="monto">Reserva: a definir</span><br>
+                <span class="subtexto">tarifa pendiente de aprobación</span>
+              </div>
+              <a class="btn btn-coral" href="#ubicacion">Reservar</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="servicios" style="background:var(--bg-raised); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+    <div class="wrap">
+      <div class="cabecera-seccion">
+        <span class="eyebrow">Qué atendemos</span>
+        <h2>Servicios del día a día</h2>
+        <p>Lo que más se atiende en el consultorio, por turno o por cita agendada.</p>
+      </div>
+
+      <div class="servicios-grid">
+        <div class="servicio">
+          <div class="icono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 3v6a4 4 0 0 0 8 0V6"></path>
+              <circle cx="5" cy="3" r="1.2"></circle>
+              <circle cx="13" cy="3" r="1.2"></circle>
+              <path d="M13 9v3a4 4 0 0 0 8 0"></path>
+              <circle cx="21" cy="12" r="1.6"></circle>
+            </svg>
+          </div>
+          <h3>Consulta general</h3>
+          <p>Revisión completa, diagnóstico y orientación. Siempre gratuita en el turno del día.</p>
+        </div>
+        <div class="servicio">
+          <div class="icono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21l4-4"></path>
+              <rect x="8.7" y="6.7" width="9" height="4" rx="1" transform="rotate(45 13.2 8.7)"></rect>
+              <path d="M14.3 4.6l3 3"></path>
+              <path d="M16.4 2.5l3 3"></path>
+              <path d="M6.6 15.4l2 2"></path>
+            </svg>
+          </div>
+          <h3>Vacunación</h3>
+          <p>Esquema básico y refuerzos para perros y gatos, con carné al día.</p>
+        </div>
+        <div class="servicio">
+          <div class="icono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-3z"></path>
+              <path d="M9 12l2 2 4-4"></path>
+            </svg>
+          </div>
+          <h3>Desparasitación</h3>
+          <p>Control interno y externo, con recomendación de frecuencia según edad.</p>
+        </div>
+        <div class="servicio">
+          <div class="icono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+              <path d="M12 8v8M8 12h8"></path>
+            </svg>
+          </div>
+          <h3>Procedimientos menores</h3>
+          <p>Curaciones, suturas y cirugías de baja complejidad en el mismo consultorio.</p>
+        </div>
+        <div class="servicio">
+          <div class="icono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+              <path d="M3 9h18"></path>
+              <path d="M8 3v4M16 3v4"></path>
+              <path d="M8.3 14.3l2 2 4-4.4"></path>
+            </svg>
+          </div>
+          <h3>Control y seguimiento</h3>
+          <p>Revisión de evolución para casos que ya iniciaron tratamiento con nosotros.</p>
+        </div>
+        <div class="servicio">
+          <div class="icono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="4" width="14" height="17" rx="2"></rect>
+              <path d="M9 3.5h6a1 1 0 0 1 1 1V6H8V4.5a1 1 0 0 1 1-1z"></path>
+              <path d="M9 12l2 2 4-4"></path>
+            </svg>
+          </div>
+          <h3>Certificados y carné</h3>
+          <p>Constancias de vacunación y trámites cortos para viaje o registro.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="equipo">
+    <div class="wrap">
+      <div class="cabecera-seccion">
+        <span class="eyebrow">Quién atiende</span>
+        <h2>Formados en el mismo consultorio</h2>
+        <p>Los veterinarios de hoy aprendieron el oficio directamente en PROSA, con el mismo criterio y el mismo trato que le dieron origen a la fundación.</p>
+      </div>
+
+      <div class="equipo-grid">
+        <article class="persona">
+          <div class="img-slot">
+            <div class="etiqueta">
+              <div class="titulo">Foto: retrato del Dr. César Pastrán</div>
+              <div class="medida">600 × 600 px · relación 1:1</div>
+            </div>
+          </div>
+          <div class="persona-cuerpo">
+            <div class="rol">Fundador</div>
+            <h3>Dr. César Pastrán</h3>
+            <p>Fundó PROSA en 2018 con una idea simple: que el dinero nunca sea la razón para no cuidar a un animal. Sigue en el consultorio, formando de primera mano a cada veterinario que se une al equipo.</p>
+          </div>
+        </article>
+
+        <article class="persona equipo-foto">
+          <div class="img-slot">
+            <div class="etiqueta">
+              <div class="titulo">Foto: dos o tres veterinarios jóvenes trabajando en el consultorio</div>
+              <div class="medida">1200 × 800 px · relación 3:2</div>
+            </div>
+          </div>
+          <div class="persona-cuerpo">
+            <div class="rol">El equipo de hoy</div>
+            <h3>Veterinarios jóvenes, formación directa</h3>
+            <p>Cada uno se entrenó en el día a día del consultorio bajo la supervisión del Dr. Pastrán, antes de atender solos. Esa es la razón por la que el trato no cambia según quién esté ese día de turno.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="testimonio">
+        <div class="marca-cita">&ldquo;</div>
+        <blockquote>El doctor es muy comprometido, siempre enfocado en el bienestar del animal. La consulta es gratis, solo se cobra el tratamiento.</blockquote>
+        <cite>— Reseña de un paciente, Google Maps</cite>
+      </div>
+    </div>
+  </section>
+
+  <section id="ubicacion" style="background:var(--bg-raised); border-top:1px solid var(--line);">
+    <div class="wrap">
+      <div class="cabecera-seccion">
+        <span class="eyebrow">Cómo llegar</span>
+        <h2>Estamos en Kennedy, Bogotá</h2>
+      </div>
+
+      <div class="ubi-grid">
+        <div>
+          <ul class="ubi-lista">
+            <li>
+              <span class="icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"></path><circle cx="12" cy="9" r="2.4"></circle></svg>
+              </span>
+              <div>
+                <div class="titulo">Dirección</div>
+                <div class="detalle mono">Calle 40 Sur # 79-23, Kennedy, Bogotá D.C.</div>
+              </div>
+            </li>
+            <li>
+              <span class="icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c0 8.3 6.7 15 15 15l3-4-6-3-2 2c-2.5-1.2-4.8-3.5-6-6l2-2-3-6-4 3z"></path></svg>
+              </span>
+              <div>
+                <div class="titulo">Teléfono / WhatsApp</div>
+                <div class="detalle mono">(601) 299 8237</div>
+              </div>
+            </li>
+            <li>
+              <span class="icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+              </span>
+              <div>
+                <div class="titulo">Horario del turno</div>
+                <div class="detalle">Atención por orden de llegada. Escriba por WhatsApp para conocer el horario del día.</div>
+              </div>
+            </li>
+          </ul>
+          <a class="btn btn-coral" href="#inicio">Escribir por WhatsApp</a>
+        </div>
+
+        <div class="mapa-tarjeta">
+          <svg class="mapa-svg" viewBox="0 0 480 320" role="img" aria-label="Mapa esquemático de la ubicación de PROSA en Kennedy, Bogotá">
+            <rect width="480" height="320" fill="var(--pine-soft)"></rect>
+            <g stroke="var(--pine-line)" stroke-width="2">
+              <line x1="0" y1="70" x2="480" y2="70"></line>
+              <line x1="0" y1="170" x2="480" y2="170"></line>
+              <line x1="0" y1="255" x2="480" y2="255"></line>
+              <line x1="110" y1="0" x2="110" y2="320"></line>
+              <line x1="250" y1="0" x2="250" y2="320"></line>
+              <line x1="370" y1="0" x2="370" y2="320"></line>
+            </g>
+            <line x1="0" y1="170" x2="480" y2="170" stroke="var(--coral)" stroke-width="6" stroke-linecap="round"></line>
+            <text x="20" y="160" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--pine-ink)">Calle 40 Sur</text>
+            <g transform="translate(250,170)">
+              <circle r="22" fill="var(--coral)" opacity=".18"></circle>
+              <path d="M0 -16c-8 0-14 6-14 14 0 10 14 22 14 22s14-12 14-22c0-8-6-14-14-14z" fill="var(--coral)"></path>
+              <circle cy="-2" r="5" fill="var(--pine-soft)"></circle>
+            </g>
+            <text x="260" y="150" font-family="Public Sans, sans-serif" font-weight="700" font-size="13" fill="var(--pine-ink)">PROSA</text>
+          </svg>
+          <div class="mapa-pie">
+            <div class="txt">Ilustración de referencia — <strong>reemplazar por mapa embebido real</strong> al aprobar el diseño.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cierre">
+    <span class="eyebrow">Antes de irse</span>
+    <h2>La fila gratuita no cambia. La hora reservada es su elección.</h2>
+    <p>Ambas caben en el mismo consultorio, con el mismo equipo de siempre.</p>
+    <div class="cierre-cta">
+      <a class="btn btn-coral" href="#como-funciona">Reservar cita con hora</a>
+      <a class="btn btn-pine" href="#ubicacion">Ir por el turno del día</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-marca">
+        <a class="marca" href="#inicio">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="7" cy="8" r="2"></circle>
+            <circle cx="12" cy="6" r="2"></circle>
+            <circle cx="17" cy="8" r="2"></circle>
+            <path d="M12 11c-3.5 0-6 2.4-6 5.2 0 1.9 1.6 3.3 3.6 3.3.9 0 1.6-.3 2.4-.3s1.5.3 2.4.3c2 0 3.6-1.4 3.6-3.3 0-2.8-2.5-5.2-6-5.2z"></path>
+          </svg>
+          <span class="marca-texto">
+            <span class="nombre">PROSA</span><br>
+            <span class="sub">Pro Salud Animal</span>
+          </span>
+        </a>
+        <p>Fundación veterinaria sin ánimo de lucro en Kennedy, Bogotá. La consulta es gratuita desde 2018.</p>
+      </div>
+
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h4>Sitio</h4>
+          <ul>
+            <li><a href="#como-funciona">Cómo funciona</a></li>
+            <li><a href="#servicios">Servicios</a></li>
+            <li><a href="#equipo">Equipo</a></li>
+            <li><a href="#ubicacion">Ubicación</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <ul>
+            <li><a href="#ubicacion">(601) 299 8237</a></li>
+            <li><a href="#ubicacion">Calle 40 Sur # 79-23, Kennedy</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-legal">
+      <span>Pro Salud Animal PROSA · NIT 901.161.143-3 · Entidad sin ánimo de lucro</span>
+      <span>Propuesta de diseño — pendiente de aprobación de la fundación</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var btnMenu = document.getElementById('btnMenu');
+    var btnCerrar = document.getElementById('btnCerrar');
+    var panel = document.getElementById('panelMovil');
+    function abrir(){ panel.classList.add('abierto'); btnMenu.setAttribute('aria-expanded','true'); }
+    function cerrar(){ panel.classList.remove('abierto'); btnMenu.setAttribute('aria-expanded','false'); }
+    btnMenu.addEventListener('click', abrir);
+    btnCerrar.addEventListener('click', cerrar);
+    panel.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', cerrar); });
+  })();
+</script>
+
+</body>
+</html>

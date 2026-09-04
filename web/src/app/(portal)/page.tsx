@@ -80,7 +80,7 @@ export default async function PaginaPanel() {
       </p>
 
       <section>
-        <h2 className={estilos.titulo}>Consultorios</h2>
+        <h2 className={estilos.tituloSeccion}>Consultorios</h2>
         <div className={tabla.tarjetas}>
           {d.cola.consultorios.map((c) => (
             <div key={c.consultorio} className={tabla.tarjeta}>
@@ -105,7 +105,7 @@ export default async function PaginaPanel() {
       </section>
 
       <section className={tabla.seccion}>
-        <h2 className={estilos.titulo}>Cola</h2>
+        <h2 className={estilos.tituloSeccion}>Cola</h2>
         <div className={tabla.indicadores}>
           <Indicador
             valor={numero(d.cola.en_espera)}
@@ -124,7 +124,7 @@ export default async function PaginaPanel() {
 
       {verDinero && (
         <section className={tabla.seccion}>
-          <h2 className={estilos.titulo}>Caja del día</h2>
+          <h2 className={estilos.tituloSeccion}>Caja del día</h2>
           <div className={tabla.indicadores}>
             <Indicador valor={pesos(d.caja.total_ingresos)} etiqueta="Ingresos" tono="bien" />
             <Indicador valor={pesos(d.caja.ingresos.efectivo)} etiqueta="Efectivo" />
@@ -141,7 +141,7 @@ export default async function PaginaPanel() {
       )}
 
       <section className={tabla.seccion}>
-        <h2 className={estilos.titulo}>Inventario</h2>
+        <h2 className={estilos.tituloSeccion}>Inventario</h2>
         <div className={tabla.indicadores}>
           <Indicador
             valor={numero(d.inventario.bajo_minimo)}
@@ -161,7 +161,7 @@ export default async function PaginaPanel() {
         </div>
 
         {d.inventario.criticos.length > 0 && (
-          <ul className={estilos.lista} style={{ marginTop: '0.75rem' }}>
+          <ul className={`${estilos.lista} ${tabla.subLista}`}>
             {d.inventario.criticos.map((c) => (
               <li key={c.medicamento} className={estilos.fila}>
                 <span className={estilos.emoji}>🔻</span>
@@ -178,7 +178,7 @@ export default async function PaginaPanel() {
       </section>
 
       <section className={tabla.seccion}>
-        <h2 className={estilos.titulo}>Pendientes</h2>
+        <h2 className={estilos.tituloSeccion}>Pendientes</h2>
         <div className={tabla.tarjetas}>
           <Link className={tabla.tarjeta} href="/consultas">
             <span className={tabla.tarjetaTitulo}>

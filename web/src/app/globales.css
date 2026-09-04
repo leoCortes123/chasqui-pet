@@ -1,4 +1,8 @@
-/* Estilos base compartidos por todo el sitio. CSS plano, sin frameworks. */
+/* Estilos base compartidos por todo el sitio. CSS plano, sin frameworks:
+   los colores y medidas salen de tokens.css, aquí sólo se fijan las reglas
+   que valen para cualquier página. */
+
+@import './tokens.css';
 
 *,
 *::before,
@@ -14,15 +18,96 @@ body {
 }
 
 body {
-  background: #0b1016;
-  color: #e9eef5;
+  background: var(--fondo);
+  color: var(--texto);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
+  /* Tipografía fluida: 15px en un celular angosto, 16px desde tableta. Nunca
+     se fija en px puros para no romper el zoom de texto del sistema. */
+  font-size: clamp(0.94rem, 0.9rem + 0.2vw, 1rem);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* Evita que iOS agrande el texto al girar el teléfono. */
+  -webkit-text-size-adjust: 100%;
 }
 
-/* La pantalla de sala de espera se ve en un monitor sin ratón: nada de
-   selección accidental ni barras de desplazamiento. */
-:root {
-  color-scheme: dark;
+/* --- Accesibilidad transversal -------------------------------------------- */
+
+/* Foco visible y uniforme. Se usa :focus-visible para no dibujar el anillo al
+   hacer clic con el ratón, pero sí al navegar con teclado (WCAG 2.4.7). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+  border-radius: var(--radio-1);
+}
+
+/* Ningún control táctil por debajo de 44 px. */
+:where(button, [role='button'], summary) {
+  min-height: var(--toque);
+}
+
+/* Los campos nunca bajan de 16px: por debajo, Safari en iOS hace zoom al
+   enfocarlos y descoloca el formulario. */
+:where(input, select, textarea) {
+  font-size: max(1rem, 0.94rem);
+  min-height: var(--toque);
+}
+
+/* El texto puede crecer hasta 200% sin cortar contenido: nada de alturas
+   fijas en contenedores de texto (se respeta en las hojas de módulo). */
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Palabras largas (correos, nombres de medicamento) no desbordan en móvil. */
+:where(h1, h2, h3, p, li, td, th, dd, dt) {
+  overflow-wrap: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Modo de alto contraste de Windows: los bordes dibujados con color de fondo
+   desaparecen, así que se fuerza un borde del sistema en las superficies. */
+@media (forced-colors: active) {
+  :where(a, button, summary):focus-visible {
+    outline: 3px solid Highlight;
+  }
+}
+
+/* --- Enlace «saltar al contenido» ------------------------------------------
+   Primer elemento enfocable de la página: permite a quien navega con teclado
+   o lector de pantalla brincarse la barra de navegación (WCAG 2.4.1).
+--------------------------------------------------------------------------- */
+
+.saltar {
+  position: absolute;
+  left: var(--esp-2);
+  top: var(--esp-2);
+  z-index: 100;
+  padding: var(--esp-2) var(--esp-4);
+  border-radius: var(--radio-2);
+  background: var(--marca);
+  color: var(--marca-texto);
+  font-weight: 700;
+  text-decoration: none;
+  /* Fuera de pantalla hasta que recibe el foco. */
+  transform: translateY(-200%);
+  transition: transform var(--transicion);
+}
+
+.saltar:focus {
+  transform: translateY(0);
 }
